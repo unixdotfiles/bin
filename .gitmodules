@@ -1,0 +1,3 @@
+[submodule "git-imerge"]
+	path = submodules/git-imerge
+	url = https://github.com/mhagger/git-imerge.git
