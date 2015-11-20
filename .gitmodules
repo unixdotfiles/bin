@@ -1,3 +1,6 @@
 [submodule "git-imerge"]
 	path = submodules/git-imerge
 	url = https://github.com/mhagger/git-imerge.git
+[submodule "submodules/ministat"]
+	path = submodules/ministat
+	url = https://github.com/codahale/ministat.git
