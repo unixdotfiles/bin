@@ -1,1 +1,1 @@
-/Users/eax/svn/arc/arcanist/bin/arc
+submodules/arcanist/bin/arc

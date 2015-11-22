@@ -4,3 +4,9 @@
 [submodule "submodules/ministat"]
 	path = submodules/ministat
 	url = https://github.com/codahale/ministat.git
+[submodule "submodules/arcanist"]
+	path = submodules/arcanist
+	url = https://github.com/phacility/arcanist.git
+[submodule "submodules/libphutil"]
+	path = submodules/libphutil
+	url = https://github.com/phacility/libphutil.git
