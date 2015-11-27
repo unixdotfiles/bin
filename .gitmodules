@@ -13,3 +13,4 @@
 [submodule "submodules/check-soa"]
 	path = submodules/check-soa
 	url = https://github.com/bortzmeyer/check-soa.git
+	ignore = dirty
