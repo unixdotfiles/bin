@@ -5,3 +5,4 @@ git submodule update
 git submodule foreach git pull --rebase origin master
 git add submodules
 git commit -m "bump submodules (automated)"
+git show
