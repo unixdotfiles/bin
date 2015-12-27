@@ -7,3 +7,4 @@ sudo -H gem update
 sudo -H gem update --system
 sudo -H npm -g update
 sudo -H pip install -U $(pip list --outdated | awk '!/Could not|ignored/ {print $1}')
+vim -c 'VundleUpdate'
