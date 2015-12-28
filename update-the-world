@@ -1,9 +1,9 @@
+sudo -v
 while true; do sudo -v; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
-
 sudo -H port selfupdate
 sudo -H port upgrade outdated
 sudo -H pkg upgrade
-sudo -H gem update
+yes n | sudo -H gem update
 sudo -H gem update --system
 sudo -H npm -g update
 sudo -H pip install -U $(pip list --outdated | awk '!/Could not|ignored/ {print $1}')
