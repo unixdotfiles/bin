@@ -1,7 +1,7 @@
 sudo -v
 while true; do sudo -v; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
 sudo -H port selfupdate
-sudo -H port upgrade outdated
+sudo -H port upgrade outdated and not nodejs
 sudo -H pkg upgrade
 yes n | sudo -H gem update
 sudo -H gem update --system
