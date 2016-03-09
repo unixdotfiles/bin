@@ -6,6 +6,6 @@ sudo -H pkg upgrade
 yes n | sudo -H gem update
 sudo -H gem update --system
 npm -g update
-sudo -H pip install -U $(pip list --outdated | awk '!/Could not|ignored/ {print $1}')
+pip install -U $(pip list --outdated | awk '!/Could not|ignored/ {print $1}')
 #cpan -u
 vim -c 'VundleUpdate'
