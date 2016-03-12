@@ -22,14 +22,4 @@ function print_image() {
     printf '\a\n'
 }
 
-function error() {
-    echo "ERROR: $@" 1>&2
-}
-
-function usage() {
-    echo "Usage: imgcat file ..." 1>& 2
-    echo "   or: imgcat < file" 1>& 2
-    exit "$1"
-}
-
 print_image "" 1 "$(cat "$@" | base64)"
