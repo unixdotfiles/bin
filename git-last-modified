@@ -1,0 +1,66 @@
+#!/bin/sh
+
+FILES="$(git ls-tree HEAD .)"
+RAWFILES=""
+MAXLEN=0
+NEWLINE=$(printf "\n@")
+NEWLINE=${NEWLINE%@}
+IFS=$(printf "\n\b")
+counter=0
+for f in $FILES; do
+  fname="${f##*	}"
+  RAWFILES="$RAWFILES$fname$NEWLINE"
+  other="${f%%  *}"
+  type=${other%%*tree*}
+  if [ -z "${type}" ];
+  then
+    fname="$fname/";
+  fi
+
+  if [ ${#fname} -gt $MAXLEN ]; then
+    MAXLEN=${#fname};
+  fi
+  counter=$((counter + 1))
+done
+MAXLEN=$((MAXLEN+1)) # Consider slash at the end of dirname
+
+number_of_files=$counter
+space_for_file_numbers=${#number_of_files}
+
+# colors definitions
+blue=$(tput setaf 27)
+normal=$(tput setaf 0)
+black_bg=$(tput setab 233)
+brown=$(tput setaf 237)
+bold=$(tput bold)
+
+reset=$(tput sgr0)
+
+# format definitions
+filename_format="$normal"
+dirname_format="$reset$blue$bold"
+file_numbers_format="$brown"
+
+i=1
+
+for f in $RAWFILES; do
+  printf "$reset"
+
+  # file numbers
+  printf "$file_numbers_format"
+  printf "%${space_for_file_numbers}d | " "$i"
+
+  str=$(git log -1 --pretty=format:"%<(23)%C(green)%cr%C(white) | %C(cyan)%h%C(white) | %<(15)%C(yellow)%an%C(white) | %s" -- $f)
+  if [ -d "$f" ]; then
+    printf "$dirname_format"
+  else
+    printf "$filename_format"
+  fi
+
+  printf "%-${MAXLEN}s$reset" "$f"
+
+  printf " -- %s\n" "$str"
+  i=$((i + 1))
+done
+
+printf "$reset"
