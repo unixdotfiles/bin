@@ -1,12 +1,12 @@
 #!/bin/sh
 
-FILES="$(git ls-tree HEAD .)"
+FILES="$(git ls-tree HEAD)"
 RAWFILES=""
 MAXLEN=0
 NEWLINE=$(printf "\n@")
 NEWLINE=${NEWLINE%@}
 IFS=$(printf "\n\b")
-counter=0
+number_of_files=0
 for f in $FILES; do
   fname="${f##*	}"
   other="${f%%  *}"
@@ -20,16 +20,14 @@ for f in $FILES; do
   if [ ${#fname} -gt $MAXLEN ]; then
     MAXLEN=${#fname};
   fi
-  counter=$((counter + 1))
+  number_of_files=$((number_of_files+1))
 done
 
-number_of_files=$counter
 space_for_file_numbers=${#number_of_files}
 
 # colors definitions
 blue=$(tput setaf 27)
 normal=$(tput setaf 0)
-black_bg=$(tput setab 233)
 brown=$(tput setaf 237)
 bold=$(tput bold)
 
@@ -50,10 +48,9 @@ for f in $RAWFILES; do
   printf "%${space_for_file_numbers}d | " "$i"
 
   str=$(git log -1 --pretty=format:"%<(23)%C(green)%cr%C(white) | %C(cyan)%h%C(white) | %<(15)%C(yellow)%an%C(white) | %s" -- $f)
-  if [ -d "$f" ]; then
+  printf "$filename_format"
+  if [ "$f" != ${f%/} ]; then
     printf "$dirname_format"
-  else
-    printf "$filename_format"
   fi
 
   printf "%-${MAXLEN}s$reset" "$f"
