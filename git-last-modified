@@ -9,13 +9,13 @@ IFS=$(printf "\n\b")
 counter=0
 for f in $FILES; do
   fname="${f##*	}"
-  RAWFILES="$RAWFILES$fname$NEWLINE"
   other="${f%%  *}"
   type=${other%%*tree*}
   if [ -z "${type}" ];
   then
     fname="$fname/";
   fi
+  RAWFILES="$RAWFILES$fname$NEWLINE"
 
   if [ ${#fname} -gt $MAXLEN ]; then
     MAXLEN=${#fname};
