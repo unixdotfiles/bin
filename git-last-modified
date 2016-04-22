@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set -eu
+
 FILES="$(git ls-tree HEAD)"
 RAWFILES=""
 MAXLEN=0
