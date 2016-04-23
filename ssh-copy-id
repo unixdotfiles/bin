@@ -35,7 +35,7 @@ usage() {
 sendkey() {
 	local h="$1"
 	local k="$2"
-	printf "%s\n" "$k" | ssh $port -S none $options "$user$h" /bin/sh -c \'' \
+	printf "%s\n" "$k" | ssh "$port" -S none $options "$user$h" /bin/sh -c \'' \
 		set -e; \
 		umask 077; \
 		keyfile=$HOME/.ssh/authorized_keys ; \
