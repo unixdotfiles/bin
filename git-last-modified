@@ -51,7 +51,7 @@ for f in $RAWFILES; do
   printf "$file_numbers_format"
   printf "%${space_for_file_numbers}d | " "$i"
 
-  str=$(git log -1 --pretty=format:"%<(23)%C(green)%cr%C(white) | %C(cyan)%h%C(white) | %<(15)%C(yellow)%an%C(white) | %s" -- "$f")
+  str=$(git log -1 --pretty=format:"%<(15)%C(green)%cr%C(white) | %C(cyan)%h%C(white) | %<(12)%C(yellow)%an%C(white) | %s" -- "$f")
   printf "$filename_format"
   if [ "$f" != "${f%/}" ]; then
     printf "$dirname_format"
