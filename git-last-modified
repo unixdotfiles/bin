@@ -4,7 +4,7 @@ set -eu
 
 ref="${1:-HEAD}"
 
-FILES="$(git ls-tree $ref)"
+FILES="$(git ls-tree "$ref")"
 RAWFILES=""
 MAXLEN=0
 NEWLINE=$(printf "\n@")
