@@ -1,1 +1,2 @@
 imgcat: https://raw.githubusercontent.com/gnachman/iTerm2/master/tests/imgcat
+_rustup: https://github.com/rust-lang-nursery/rustup.rs/blob/master/src/rustup-cli/zsh/_rustup
