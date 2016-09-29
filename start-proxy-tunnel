@@ -1,0 +1,1 @@
+AUTOSSH_DEBUG=1 autossh -S none -vvv -M 5656 -N -D 5554 "$1" -N -vvv
