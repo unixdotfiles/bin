@@ -9,7 +9,7 @@ fi
 export AUTOSSH_DEBUG=1
 host="$1"
 cmd="autossh -S none -vvv -M 5656 -N -D 5554 $host -N -vvv"
-if false && __exists tmux
+if __exists tmux
 then
 	tmux new-session -d -s "ssh-tunnels-$host" -n "ssh-tunnel-$host" "reattach-to-user-namespace $cmd"
 else
