@@ -1,1 +1,17 @@
-AUTOSSH_DEBUG=1 autossh -S none -vvv -M 5656 -N -D 5554 "$1" -N -vvv
+#!/bin/sh
+. ~/.conf/common_shell/functions.sh
+if [ $# -ne 1 ]
+then
+	echo select a host
+  exit 1
+fi
+
+export AUTOSSH_DEBUG=1
+host="$1"
+cmd="autossh -S none -vvv -M 5656 -N -D 5554 $host -N -vvv"
+if false && __exists tmux
+then
+	tmux new-session -d -s "ssh-tunnels-$host" -n "ssh-tunnel-$host" "reattach-to-user-namespace $cmd"
+else
+  $cmd
+fi
