@@ -10,7 +10,7 @@ from typing import List
 import nmap
 
 
-def print_results(n, results) -> None:
+def print_results(n) -> None:
     for host in n.all_hosts():
         open_ports = [ port for port in n[host]["tcp"] if n[host]["tcp"][port]['state'] == "open"]
         print("{}: {}".format(host, open_ports))
@@ -22,8 +22,8 @@ def find_open_http_ports(args):
     if args.v:
         extra_args.extend(["-sV", "--version-intensity", "9", "-sS"])
     n = nmap.PortScanner()
-    results = n.scan(args.cidr, ports="80,443", arguments=" ".join(extra_args), sudo=False)
-    return n, results
+    n.scan(args.cidr, ports="80,443", arguments=" ".join(extra_args), sudo=False)
+    return n
 
 
 def parse_args() -> argparse.ArgumentParser:
@@ -45,8 +45,8 @@ def main(argv: List[str]) -> None:
     parser = parse_args()
     args = parser.parse_args(argv)
     if args.command == "find-open-http-ports":
-        n, r = find_open_http_ports(args)
-        print_results(n, r)
+        n = find_open_http_ports(args)
+        print_results(n)
 
 if __name__ == "__main__":
     main(sys.argv[1:])
