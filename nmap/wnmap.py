@@ -12,7 +12,7 @@ import nmap
 
 def print_results(n) -> None:
     for host in n.all_hosts():
-        open_ports = [ port for port in n[host]["tcp"] if n[host]["tcp"][port]['state'] == "open"]
+        open_ports = [port for port in n[host]["tcp"] if n[host]["tcp"][port]['state'] == "open"]
         print("{}: {}".format(host, open_ports))
 
 
@@ -47,6 +47,7 @@ def main(argv: List[str]) -> None:
     if args.command == "find-open-http-ports":
         n = find_open_http_ports(args)
         print_results(n)
+
 
 if __name__ == "__main__":
     main(sys.argv[1:])
