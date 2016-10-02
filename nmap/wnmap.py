@@ -5,7 +5,7 @@
 import argparse
 import sys
 
-from typing import List
+from typing import List, Text
 
 import nmap
 
@@ -36,7 +36,7 @@ def parse_args() -> argparse.ArgumentParser:
     return parser
 
 
-def main(argv: List[str]) -> None:
+def main(argv: List[Text]) -> None:
     """
     main entry point for the program
 
