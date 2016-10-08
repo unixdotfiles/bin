@@ -25,6 +25,7 @@ def _gather_open_http_ports(args):
     n.scan(args.cidr, ports="80,443", arguments=" ".join(extra_args), sudo=False)
     return n
 
+
 def find_open_http_ports(args):
     print_results(_gather_open_http_ports(args))
 
