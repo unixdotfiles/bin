@@ -10,6 +10,6 @@ apm update
 cabal update
 pip install -U $(pip list --outdated | awk '!/Could not|ignored/ {print $1}')
 #cpan -u
-vim -c 'VundleUpdate'
+vim -i NONE +VundleUpdate +qa
 rustup update
 rustup self update
