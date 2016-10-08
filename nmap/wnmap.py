@@ -16,7 +16,7 @@ def print_results(n) -> None:
         print("{}: {}".format(host, open_ports))
 
 
-def find_open_http_ports(args):
+def _gather_open_http_ports(args):
     extra_args = ["--open", "-n", "-v", "-sT"]
     extra_args += ""
     if args.v:
@@ -24,6 +24,9 @@ def find_open_http_ports(args):
     n = nmap.PortScanner()
     n.scan(args.cidr, ports="80,443", arguments=" ".join(extra_args), sudo=False)
     return n
+
+def find_open_http_ports(args):
+    print_results(_gather_open_http_ports(args))
 
 
 def parse_args() -> argparse.ArgumentParser:
@@ -33,6 +36,7 @@ def parse_args() -> argparse.ArgumentParser:
     fohp_parser = subparsers.add_parser("find-open-http-ports")
     fohp_parser.add_argument("--cidr", type=str, required=True)
     fohp_parser.add_argument("-v", help="get more information", action="store_true")
+    fohp_parser.set_defaults(fn=find_open_http_ports)
     return parser
 
 
@@ -44,9 +48,7 @@ def main(argv: List[Text]) -> None:
     """
     parser = parse_args()
     args = parser.parse_args(argv)
-    if args.command == "find-open-http-ports":
-        n = find_open_http_ports(args)
-        print_results(n)
+    args.fn(args)
 
 
 if __name__ == "__main__":
