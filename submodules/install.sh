@@ -13,3 +13,7 @@ git submodule update --init
   go get github.com/miekg/dns &&
   (cd submodules/check-soa && go build check-soa.go)
 )
+(
+  export GOPATH=~/bin/submodules/go/ &&
+  go get -d -u github.com/google/battery-historian/...
+)
