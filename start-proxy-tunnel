@@ -1,13 +1,19 @@
 #!/bin/sh
 . ~/.conf/common_shell/functions.sh
-if [ $# -ne 1 ]
-then
-	echo select a host
-  exit 1
-fi
+
+set -- $(getopt -n "$0" -o "h:" -l "host:" -- "$@")
+
+for o
+do case "$o" in
+	-h|--host)
+		shift; host="$1"; shift;
+		;;
+	esac
+done
+
+host="${host:?host required}"
 
 export AUTOSSH_DEBUG=1
-host="$1"
 cmd="autossh -S none -vvv -M 5656 -N -D 5554 $host -N -vvv"
 if __exists tmux
 then
