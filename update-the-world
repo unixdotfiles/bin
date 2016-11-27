@@ -8,7 +8,7 @@ gem update --user-install
 npm -g update
 apm update
 cabal update
-pip install --user -U $(pip list --outdated | awk '!/Could not|ignored/ {print $1}')
+pip install --user -U $(pip list --format=legacy --outdated | awk '!/Could not|ignored/ {print $1}')
 #cpan -u
 vim -i NONE +VundleUpdate +qa
 rustup update
