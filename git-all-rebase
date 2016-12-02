@@ -12,4 +12,5 @@ do
   fi
   git rebase "$tracking" || git rebase --abort
 done
+git checkout master
 git branch --merged=origin/master|grep -v master|xargs git branch -d
