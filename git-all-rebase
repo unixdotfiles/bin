@@ -10,7 +10,17 @@ do
   then
     continue
   fi
-  git rebase "$tracking" || git rebase --abort
+  rebase_action="$tracking"
+  while ! git rebase "$rebase_action"
+  do
+    if git diff-index --quiet HEAD --
+    then
+      git rebase --skip
+      action="--continue"
+    else
+      action="--abort"
+    fi
+  done
 done
 git checkout master
 git branch --merged=origin/master|grep -v master|xargs git branch -d
