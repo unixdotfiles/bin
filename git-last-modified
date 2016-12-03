@@ -24,7 +24,6 @@ def main():
     number_space = (len(files_meta) % 10) + 1
     for idx, file in enumerate(files_meta):
         git_log_command = ['git', 'log', '-1']
-        # I know its possible to get all the data at once, and I should do that, but port code natively for now
         git_log_command += ['--pretty=format:%<(15)%C(green)%cr%C(white) | %C(cyan)%h%C(white) | %<(12)%C(yellow)%an%C(white) | %s%Creset']
         git_log_command += ['--', file.name.decode("utf-8")]
         # print(git_log_command)
