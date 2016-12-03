@@ -1,66 +1,39 @@
-#!/bin/sh
+#!/usr/bin/env python3
 
-set -eu
+import argparse
+import subprocess
 
-ref="${1:-HEAD}"
+from collections import namedtuple
 
-FILES="$(git ls-tree "$ref")"
-RAWFILES=""
-MAXLEN=0
-NEWLINE=$(printf "\n@")
-NEWLINE=${NEWLINE%@}
-IFS=$(printf "\n\b")
-number_of_files=0
-for f in $FILES; do
-  fname="${f##*	}"
-  other="${f%%  *}"
-  type=${other%%*tree*}
-  if [ -z "${type}" ];
-  then
-    fname="$fname/";
-  fi
-  RAWFILES="$RAWFILES$fname$NEWLINE"
+FileMetaData = namedtuple('FileMetaData', ['mode', 'type', 'sha', 'name'])
 
-  if [ ${#fname} -gt $MAXLEN ]; then
-    MAXLEN=${#fname};
-  fi
-  number_of_files=$((number_of_files+1))
-done
 
-space_for_file_numbers=${#number_of_files}
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("ref", nargs="?", default="HEAD")
+    args = parser.parse_args()
+    files_meta = []
+    files = subprocess.check_output(["git", "ls-tree", args.ref])
+    max_filename_len = 0
+    for line in files.splitlines():
+        single_data = FileMetaData(*(line.split(maxsplit=4)))
+        files_meta.append(single_data)
+        filename_len = len(single_data.name.decode("UTF-8"))
+        max_filename_len = max(filename_len, max_filename_len)
 
-# colors definitions
-blue=$(tput setaf 27)
-normal=$(tput setaf 0)
-brown=$(tput setaf 237)
-bold=$(tput bold)
+    number_space = (len(files_meta) % 10) + 1
+    for idx, file in enumerate(files_meta):
+        git_log_command = ['git', 'log', '-1']
+        # I know its possible to get all the data at once, and I should do that, but port code natively for now
+        git_log_command += ['--pretty=format:%<(15)%C(green)%cr%C(white) | %C(cyan)%h%C(white) | %<(12)%C(yellow)%an%C(white) | %s%Creset']
+        git_log_command += ['--', file.name.decode("utf-8")]
+        # print(git_log_command)
+        git_log_output = subprocess.check_output(git_log_command).decode("UTF-8")
+        file_format_marker = "/" if file.type == b"tree" else ""
+        filename_output = "{}{}".format(file.name.decode("UTF-8"), file_format_marker)
+        out_format = "{:>" + str(number_space) + "} | {fname:<" + str(max_filename_len + 1) + "} -- {glo}{type_marker}"
+        print(out_format.format(idx, fname=filename_output, glo=git_log_output, type_marker=file_format_marker))
 
-reset=$(tput sgr0)
 
-# format definitions
-filename_format="$normal"
-dirname_format="$reset$blue$bold"
-file_numbers_format="$brown"
-
-i=1
-
-for f in $RAWFILES; do
-  printf "$reset"
-
-  # file numbers
-  printf "$file_numbers_format"
-  printf "%${space_for_file_numbers}d | " "$i"
-
-  str=$(git log -1 --pretty=format:"%<(15)%C(green)%cr%C(white) | %C(cyan)%h%C(white) | %<(12)%C(yellow)%an%C(white) | %s" -- "$f")
-  printf "$filename_format"
-  if [ "$f" != "${f%/}" ]; then
-    printf "$dirname_format"
-  fi
-
-  printf "%-${MAXLEN}s$reset" "$f"
-
-  printf " -- %s\n" "$str"
-  i=$((i + 1))
-done
-
-printf "$reset"
+if __name__ == "__main__":
+    main()
