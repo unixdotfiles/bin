@@ -1,0 +1,4 @@
+#!/bin/sh
+cd ~/bin/submodules/ssllabs-scan
+go build ssllabs-scan.go
+./ssllabs-scan "$@"
