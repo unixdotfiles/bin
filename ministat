@@ -1,1 +1,9 @@
-submodules/ministat/src/ministat
+#!/bin/sh
+(
+  cd ~/bin/submodules/ministat &&
+    [ ! -e src/ministat ] &&
+    ./configure &&
+    make
+)
+
+~/bin/submodules/ministat/src/ministat "$@"
