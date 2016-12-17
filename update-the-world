@@ -5,7 +5,7 @@ sudo -H port selfupdate
 sudo -H port upgrade outdated
 sudo -H pkg upgrade
 gem update --user-install
-npm -g update
+sudo npm -g update
 apm update
 cabal update
 pip install --user -U $(pip list --format=legacy --outdated | awk '!/Could not|ignored/ {print $1}')
