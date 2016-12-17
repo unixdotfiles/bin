@@ -1,1 +1,13 @@
-submodules/check-soa/check-soa
+#!/bin/sh
+
+if [ ! -e ~/bin/submodules/check-soa/check-soa ]
+then
+	(
+	export GOPATH=~/bin/submodules/go/ &&
+	go get github.com/miekg/dns &&
+	(cd ~/bin/submodules/check-soa && go build check-soa.go)
+	)
+  check-soa "$@"
+else
+	~/bin/submodules/check-soa/check-soa "$@"
+fi

@@ -7,12 +7,6 @@ git submodule update --init
   make
 )
 [ ! -d submodules/go ] && mkdir submodules/go
-[ ! -e submodules/check-soa/check-soa ] &&
-(
-  export GOPATH=~/bin/submodules/go/ &&
-  go get github.com/miekg/dns &&
-  (cd submodules/check-soa && go build check-soa.go)
-)
 (
   export GOPATH=~/bin/submodules/go/ &&
   go get -d -u github.com/google/battery-historian/...
