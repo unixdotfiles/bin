@@ -1,3 +1,4 @@
+#!/bin/sh
 set -eux
 cd "$(git rev-parse --show-toplevel)"
 git pull --rebase
