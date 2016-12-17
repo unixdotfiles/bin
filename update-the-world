@@ -1,5 +1,4 @@
 (cd ~/bin && git pull --rebase && git submodule update --init --recursive)
-sudo -v
 while true; do sudo -v; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
 sudo -H port selfupdate
 sudo -H port upgrade outdated
