@@ -1,0 +1,4 @@
+#!/bin/sh
+export GOPATH=~/bin/submodules/go/
+go get -u honnef.co/go/simple/cmd/gosimple
+$GOPATH/bin/gosimple "$@"
