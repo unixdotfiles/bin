@@ -12,3 +12,4 @@ pip install --user -U $(pip list --format=legacy --outdated | awk '!/Could not|i
 vim -i NONE +VundleUpdate +qa
 rustup update
 rustup self update
+cargo search # update registry
