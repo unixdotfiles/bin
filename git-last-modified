@@ -30,8 +30,8 @@ def main():
         git_log_output = subprocess.check_output(git_log_command).decode("UTF-8")
         file_format_marker = "/" if file.type == b"tree" else ""
         filename_output = "{}{}".format(file.name.decode("UTF-8"), file_format_marker)
-        out_format = "{:>" + str(number_space) + "} | {fname:<" + str(max_filename_len + 1) + "} -- {glo}{type_marker}"
-        print(out_format.format(idx, fname=filename_output, glo=git_log_output, type_marker=file_format_marker))
+        out_format = "{:>" + str(number_space) + "} | {fname:<" + str(max_filename_len + 1) + "} -- {glo}"
+        print(out_format.format(idx, fname=filename_output, glo=git_log_output))
 
 
 if __name__ == "__main__":
