@@ -16,9 +16,9 @@ do
     if git diff-index --quiet HEAD --
     then
       git rebase --skip
-      action="--continue"
+      rebase_action="--continue"
     else
-      action="--abort"
+      rebase_action="--abort"
     fi
   done
 done
