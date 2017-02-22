@@ -1,0 +1,6 @@
+#!/bin/sh
+(
+  export GOPATH=~/bin/submodules/go/
+  go get -u github.com/spf13/hugo
+)
+~/bin/submodules/go/bin/hugo "$@"
