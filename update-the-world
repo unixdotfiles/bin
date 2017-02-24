@@ -9,7 +9,7 @@ apm update
 cabal update
 pip install --user -U $(pip list --format=legacy --outdated | awk '!/Could not|ignored/ {print $1}')
 #cpan -u
-vim -i NONE +VundleUpdate +qa
+vim -i NONE +VundleClean +VundleUpdate +qa
 rustup update
 rustup self update
 cargo search # update registry
