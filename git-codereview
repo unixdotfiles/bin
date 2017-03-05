@@ -1,0 +1,6 @@
+#!/bin/sh
+(
+  export GOPATH=~/bin/submodules/go/
+  go get -u golang.org/x/review/git-codereview
+)
+~/bin/submodules/go/bin/git-codereview "$@"
