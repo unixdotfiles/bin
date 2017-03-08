@@ -14,3 +14,4 @@ vim -i NONE +PlugInstall +PlugUpdate +PlugClean! +qa
 rustup update
 rustup self update
 cargo search # update registry
+softwareupdate -i -a
