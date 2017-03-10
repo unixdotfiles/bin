@@ -35,4 +35,4 @@ do
   done
 done
 git checkout master
-git branch --merged=origin/master|grep -v master|xargs git branch -d
+git branch --list --merged=origin/master|grep -v master|xargs git branch -d
