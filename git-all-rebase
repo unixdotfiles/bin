@@ -13,7 +13,7 @@ do
   if [ "$behind" -eq 0 ]; then
     continue
   fi
-  if [ "$behind" -gt 200 ]; then
+  if [ "$behind" -gt 120 ]; then
     echo "skipping branch very far behind"
     continue
   fi
