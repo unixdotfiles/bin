@@ -3,7 +3,7 @@ set -eux
 
 git fetch --all --prune
 git branch -f master origin/master
-git branch --merged=origin/master|grep -v master|xargs git branch -d
+git clean-branches
 git for-each-ref --format='%(refname:short) %(upstream:short)' refs/heads | while read -r branch upstream
 do
   if [ -z "$upstream" ]; then
@@ -35,4 +35,4 @@ do
   done
 done
 git checkout master
-git branch --list --merged=origin/master|grep -v master|xargs git branch -d
+git clean-branches
