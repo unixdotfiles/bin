@@ -1,4 +1,7 @@
-(cd ~/bin && git pull --rebase && git submodule update --init --recursive)
+for repo in ~/bin ~/misc-scripts ~/.conf
+do
+  (cd "$repo" && git pull --rebase && git submodule update --init --recursive)
+done
 while true; do sudo -v; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
 sudo -H port selfupdate
 sudo -H port upgrade outdated
