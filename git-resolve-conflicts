@@ -1,0 +1,40 @@
+#!/bin/sh
+
+recursive=
+mode=
+while getopts m:r flag
+do
+  case "$flag" in
+  m)  mode="$OPTARG";;
+  r)  recursive=1;;
+  ?)  printf "Usage: %s: -m ours|theirs [-r] files ...\n" "$0"
+      exit 2;;
+  esac
+done
+
+shift "$((OPTIND - 1))"
+
+if [ $# -eq 0 ]
+then
+    exit 1
+fi
+
+for item in "$@"
+do
+  if [ -d "$item" ] && [ -z "$recursive" ]
+  then
+    if [ $(basename "$item") != .git ]
+    then
+      git ls-files -z -u "$item" | xargs -0 "$0" -r -m "$mode"
+    fi
+  elif [ -f "$item" ]
+  then
+    if [ "$mode" = ours ]
+    then
+        perl -i -ne 'print unless /<<<<<</ .. /======/ or />>>>>>/;' "$item"
+    elif [ "$mode" = theirs ]
+    then
+        perl -i -ne 'print unless /<<<<<</ or /======/ .. />>>>>>/;' "$item"
+    fi
+  fi
+done
