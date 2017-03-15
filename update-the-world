@@ -1,7 +1,29 @@
+#!/bin/sh
+
+echo hi
+
+selfupdate=1
+while getopts s flag
+do
+  case "$flag" in
+  s)  selfupdate= ;;
+  ?)  printf "Usage: %s: [-s] ...\n" "$0"
+      exit 2;;
+  esac
+done
+
+shift "$((OPTIND - 1))"
+
 for repo in ~/bin ~/misc-scripts ~/.conf
 do
   (cd "$repo" && git pull --rebase && git submodule update --init --recursive)
 done
+
+if [ -n "$selfupdate" ]
+then
+  exec "$0" -s "$@";
+fi
+
 while true; do sudo -v; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
 sudo -H port selfupdate
 sudo -H port upgrade outdated
