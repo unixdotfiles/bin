@@ -20,3 +20,6 @@
 [submodule "submodules/ssllabs-scan"]
 	path = submodules/ssllabs-scan
 	url = git@github.com:ssllabs/ssllabs-scan.git
+[submodule "submodules/vim-plugins-profile"]
+	path = submodules/vim-plugins-profile
+	url = git@github.com:hyiltiz/vim-plugins-profile.git
