@@ -35,7 +35,7 @@ apm update
 pip install --user -U $(pip list --format=legacy --outdated | awk '!/Could not|ignored/ {print $1}')
 #cpan -u
 vim -i +PlugUpgrade +qa
-vim -i NONE +PlugInstall +PlugUpdate +PlugClean! +qa
+vim -i NONE +PlugUpdate +PlugClean! +qa
 rustup update
 rustup self update
 cargo search # update registry
