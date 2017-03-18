@@ -25,7 +25,7 @@ do
   rebase_action="$upstream"
   while ! git rebase "$rebase_action"
   do
-    if git diff-index --quiet HEAD --
+    if git diff-index --quiet --no-ext-diff --no-textconv HEAD --
     then
       git rebase --skip
       rebase_action="--continue"
