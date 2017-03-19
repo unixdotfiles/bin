@@ -2,7 +2,9 @@
 set -eux
 
 git fetch --all --prune
+git checkout --detach HEAD
 git branch -f master origin/master
+git checkout master
 git clean-branches
 git for-each-ref --format='%(refname:short) %(upstream:short)' refs/heads | while read -r branch upstream
 do
