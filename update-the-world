@@ -23,7 +23,7 @@ fi
 
 while true; do sudo -v; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
 sudo -H port selfupdate
-sudo -H port upgrade outdated
+sudo -H port -u upgrade outdated
 printf "y\nd\n"|sudo -H port reclaim
 sudo -H pkg upgrade
 gem update --user-install
