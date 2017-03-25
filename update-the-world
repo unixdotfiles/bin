@@ -16,6 +16,8 @@ do
   (cd "$repo" && git pull --rebase && git submodule update --init --recursive)
 done
 
+(cd ~/bin && ./submodules/update.sh)
+
 if [ -n "$selfupdate" ]
 then
   exec "$0" -s "$@";
