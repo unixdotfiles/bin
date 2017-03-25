@@ -1,7 +1,4 @@
 #!/bin/sh
-
-echo hi
-
 selfupdate=1
 while getopts s flag
 do
