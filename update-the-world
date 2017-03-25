@@ -1,4 +1,6 @@
 #!/bin/sh
+set -x
+
 selfupdate=1
 while getopts s flag
 do
