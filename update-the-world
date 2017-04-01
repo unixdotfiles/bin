@@ -15,7 +15,12 @@ shift "$((OPTIND - 1))"
 
 for repo in ~/bin ~/misc-scripts ~/.conf
 do
-  (cd "$repo" && git pull --rebase && git submodule update --init --recursive)
+  (
+    cd "$repo" &&
+    git pull --rebase &&
+    git submodule update --init --recursive &&
+    git push
+    )
 done
 
 (cd ~/bin && ./submodules/update.sh)
