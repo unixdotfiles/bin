@@ -1,6 +1,12 @@
 #!/bin/sh
 set -x
 
+quit() {
+  exit 1
+}
+
+trap quit INT
+
 selfupdate=1
 while getopts s flag
 do
