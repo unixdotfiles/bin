@@ -57,3 +57,4 @@ cargo search # update registry
 stack upgrade
 stack update
 softwareupdate -i -a
+mas upgrade
