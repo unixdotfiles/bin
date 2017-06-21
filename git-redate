@@ -1,0 +1,55 @@
+#!/bin/bash
+
+while [ $# -gt 1 ]
+do
+key="$1"
+
+case $key in
+    -c| --commits)
+    COMMITS="$2"
+    shift
+    ;;
+    *)
+    exit 1
+    ;;
+esac
+shift
+done
+
+die () {
+    echo >&2 `basename $0`: $*
+    exit 1
+}
+
+tmpfile=$(mktemp gitblah-XXXX)
+[ -f "$tmpfile" ] || die "could not get tmpfile=[$tmpfile]"
+trap "rm -f $tmpfile" EXIT
+
+
+datefmt=%cI
+
+git log -n $COMMITS --pretty=format:"$datefmt | %H | %s" > "$tmpfile";
+
+"$EDITOR" "$tmpfile"
+
+today="$(date '+%Y-%m-%d')T12:00:00-07:00"
+ENVFILTER=""
+while read commit; do
+    IFS="|" read date hash message <<< "$commit"
+    DATE_NO_SPACE="$(echo "$today" | tr -d '[[:space:]]')"
+    COMMIT_ENV=$(cat <<-END
+        if [ \$GIT_COMMIT = $hash ];
+        then
+            export GIT_AUTHOR_DATE="$DATE_NO_SPACE"
+            export GIT_COMMITTER_DATE="$DATE_NO_SPACE";
+        fi;
+	END
+    )
+    ENVFILTER="$ENVFILTER$COMMIT_ENV"
+done < $tmpfile
+
+if git filter-branch -f --env-filter "$ENVFILTER" "HEAD~$COMMITS..HEAD" >/dev/null; then
+    echo "Git commit dates updated. Run 'git push -f BRANCH_NAME' to push your changes."
+else
+    echo "Git redate failed. Please make sure you run this on a clean working directory."
+fi
