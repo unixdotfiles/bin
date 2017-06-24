@@ -1,9 +1,12 @@
 #!/bin/bash
 
-while getopts c: flag
+NEWDATE="$(date '+%Y-%m-%d')T12:00:00-07:00"
+COMMITS=5
+while getopts c:d: flag
 do
   case "$flag" in
   c)  COMMITS="$OPTARG" ;;
+  d)  NEWDATE="$OPTARG" ;;
   ?)  printf "Usage: %s: [-c###]\n" "$0"
       exit 2;;
   esac
@@ -18,17 +21,14 @@ tmpfile=$(mktemp gitblah-XXXX)
 [ -f "$tmpfile" ] || die "could not get tmpfile=[$tmpfile]"
 trap "rm -f $tmpfile" EXIT
 
-
-today="$(date '+%Y-%m-%d')T12:00:00-07:00"
 ENVFILTER=""
 git log -n "$COMMITS" --pretty=format:"%cI | %H | %s" | while read -r commit; do
     IFS="|" read -r _ hash _ <<< "$commit"
-    DATE_NO_SPACE="$(echo "$today" | tr -d '[[:space:]]')"
     COMMIT_ENV=$(cat <<-END
         if [ \$GIT_COMMIT = $hash ];
         then
-            export GIT_AUTHOR_DATE="$DATE_NO_SPACE"
-            export GIT_COMMITTER_DATE="$DATE_NO_SPACE";
+            export GIT_AUTHOR_DATE="$NEWDATE"
+            export GIT_COMMITTER_DATE="$NEWDATE";
         fi;
 	END
     )
