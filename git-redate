@@ -19,9 +19,7 @@ tmpfile=$(mktemp gitblah-XXXX)
 trap "rm -f $tmpfile" EXIT
 
 
-datefmt=%cI
-
-git log -n "$COMMITS" --pretty=format:"$datefmt | %H | %s" > "$tmpfile";
+git log -n "$COMMITS" --pretty=format:"%cI | %H | %s" > "$tmpfile";
 
 "$EDITOR" "$tmpfile"
 
