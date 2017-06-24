@@ -14,9 +14,6 @@
 	path = submodules/check-soa
 	url = https://github.com/bortzmeyer/check-soa.git
 	ignore = dirty
-[submodule "submodules/git-remote-init"]
-	path = submodules/git-remote-init
-	url = https://github.com/juanpabloaj/git-remote-init
 [submodule "submodules/ssllabs-scan"]
 	path = submodules/ssllabs-scan
 	url = git@github.com:ssllabs/ssllabs-scan.git
