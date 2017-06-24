@@ -19,13 +19,9 @@ tmpfile=$(mktemp gitblah-XXXX)
 trap "rm -f $tmpfile" EXIT
 
 
-git log -n "$COMMITS" --pretty=format:"%cI | %H | %s" > "$tmpfile";
-
-"$EDITOR" "$tmpfile"
-
 today="$(date '+%Y-%m-%d')T12:00:00-07:00"
 ENVFILTER=""
-while read -r commit; do
+git log -n "$COMMITS" --pretty=format:"%cI | %H | %s" | while read -r commit; do
     IFS="|" read -r _ hash _ <<< "$commit"
     DATE_NO_SPACE="$(echo "$today" | tr -d '[[:space:]]')"
     COMMIT_ENV=$(cat <<-END
@@ -37,7 +33,7 @@ while read -r commit; do
 	END
     )
     ENVFILTER="$ENVFILTER$COMMIT_ENV"
-done < "$tmpfile"
+done
 
 if git filter-branch -f --env-filter "$ENVFILTER" "HEAD~$COMMITS..HEAD" >/dev/null; then
     echo "Git commit dates updated. Run 'git push -f BRANCH_NAME' to push your changes."
