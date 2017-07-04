@@ -1,4 +1,5 @@
 #!/bin/sh
+set -eux
 cd ~/bin/submodules/ssllabs-scan
-go build ssllabs-scan.go
-./ssllabs-scan "$@"
+go build ssllabs-scan-v3.go
+./ssllabs-scan-v3 "$@"
