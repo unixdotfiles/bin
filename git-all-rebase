@@ -1,7 +1,20 @@
 #!/bin/sh
 set -eux
 
-git fetch --all --prune
+opt_all="--all"
+while getopts A flag
+do
+  case "$flag" in
+  A)  opt_all="" ;; # Disable --all
+  ?)  printf "Usage: %s: [-A] ...\n" "$0"
+      exit 2;;
+  esac
+done
+
+shift "$((OPTIND - 1))"
+
+
+git fetch $opt_all --prune
 git checkout --detach HEAD
 git branch -f master origin/master
 git clean-branches
