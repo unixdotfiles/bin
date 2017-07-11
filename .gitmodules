@@ -20,3 +20,6 @@
 [submodule "submodules/vim-plugins-profile"]
 	path = submodules/vim-plugins-profile
 	url = git@github.com:hyiltiz/vim-plugins-profile.git
+[submodule "submodules/dnscaa"]
+	path = submodules/dnscaa
+	url = git@github.com:weppos/dnscaa.git
