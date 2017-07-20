@@ -1,6 +1,29 @@
 #!/bin/sh
 
+opt_format="list"
+while getopts lt flag
+do
+  case "$flag" in
+  l)  opt_format="list" ;;
+  t)  opt_format="text" ;;
+  ?)  printf "Usage: %s: [-lt] ...\n" "$0"
+      exit 2;;
+  esac
+done
+
+shift "$((OPTIND - 1))"
+
+do_suffix() {
+  if [ "$opt_format" = "list" ]
+  then
+    cat
+  elif [ "$opt_format" = "text" ]
+  then
+    xargs git log --no-walk=sorted --decorate --oneline
+  fi
+}
+
 for ref in $(git for-each-ref --format="%(refname:short)" refs/heads/|grep -v master)
 do
   git cherry origin/master "$ref" | grep '^\+'
-done | sort -u
+done | cut -d ' ' -f 2 | do_suffix
