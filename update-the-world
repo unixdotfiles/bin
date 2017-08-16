@@ -45,11 +45,12 @@ then
   softwareupdate -i -a
   mas upgrade
   mac-update
+  printf "y\nd\n"|sudo -H port reclaim
+else
+  sudo -H pkg upgrade
+  sudo -H apt-get update
+  sudo -H apt-get dist-upgrade
 fi
-printf "y\nd\n"|sudo -H port reclaim
-sudo -H pkg upgrade
-sudo -H apt-get update
-sudo -H apt-get dist-upgrade
 gem update --user-install
 sudo npm -g update
 apm update
