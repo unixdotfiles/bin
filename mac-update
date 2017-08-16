@@ -2,7 +2,6 @@
 # TODO: add error checking, program not exist checking, and non-macOS checking
 
 calibre_latest_version="$(curl -sSk https://code.calibre-ebook.com/latest)"
-calibre_current_version="$(defaults read /Applications/calibre.app/Contents/Info.plist CFBundleShortVersionString)"
 
 check_program_version() {
   program="$1"
@@ -16,4 +15,16 @@ check_program_version() {
   fi
 }
 
-check_program_version "Calibre" "$calibre_latest_version" "$calibre_current_version"
+check_installed_app() {
+  app="$1"
+  latest_version="$2"
+
+  current_ver=$(defaults read "/Applications/$app.app/Contents/Info.plist" CFBundleShortVersionString)
+
+  check_program_version "$app" "$current_ver" "$latest_version"
+
+}
+
+check_installed_app calibre "$calibre_latest_version"
+check_installed_app RStudio "???"
+
