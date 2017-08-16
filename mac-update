@@ -2,6 +2,7 @@
 # TODO: add error checking, program not exist checking, and non-macOS checking
 
 calibre_latest_version="$(curl -sSk https://code.calibre-ebook.com/latest)"
+RStudio_latest_version="$(curl -IsS http://rstudio.org/download/latest/stable/desktop/mac/RStudio-latest.dmg | grep Location|sed -E 's/.*([0-9]+\.[0-9]+\.[0-9]+).*/\1/')"
 
 check_program_version() {
   program="$1"
@@ -26,5 +27,5 @@ check_installed_app() {
 }
 
 check_installed_app calibre "$calibre_latest_version"
-check_installed_app RStudio "???"
+check_installed_app RStudio "$RStudio_latest_version"
 
