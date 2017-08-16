@@ -1,0 +1,19 @@
+#!/bin/sh
+# TODO: add error checking, program not exist checking, and non-macOS checking
+
+calibre_latest_version="$(curl -sSk https://code.calibre-ebook.com/latest)"
+calibre_current_version="$(defaults read /Applications/calibre.app/Contents/Info.plist CFBundleShortVersionString)"
+
+check_program_version() {
+  program="$1"
+  installed="$2"
+  current="$3"
+  if [ "$installed" != "$current" ]
+  then
+    printf "%s\t%s latest\t(%s installed)\n" "$program" "$current" "$installed"
+  else
+    printf "%s up to date (%s installed)\n" "$program" "$installed"
+  fi
+}
+
+check_program_version "Calibre" "$calibre_latest_version" "$calibre_current_version"
