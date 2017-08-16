@@ -37,9 +37,15 @@ fi
 (cd ~/bin && ./submodules/update.sh)
 
 while true; do sudo -v; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
-sudo -H port selfupdate
-port outdated
-sudo -H port -u upgrade outdated
+if [ "$(uname -s)" = "Darwin" ]
+then
+  sudo -H port selfupdate
+  port outdated
+  sudo -H port -u upgrade outdated
+  softwareupdate -i -a
+  mas upgrade
+  mac-update
+fi
 printf "y\nd\n"|sudo -H port reclaim
 sudo -H pkg upgrade
 sudo -H apt-get update
@@ -57,6 +63,3 @@ rustup self update
 cargo search # update registry
 stack upgrade
 stack update
-softwareupdate -i -a
-mas upgrade
-mac-update
