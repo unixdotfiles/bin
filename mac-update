@@ -1,7 +1,7 @@
 #!/bin/sh
 # TODO: add error checking, program not exist checking, and non-macOS checking
 
-three_part_version='s/.*([0-9]+\.[0-9]+\.[0-9]+).*/\1/'
+three_part_version='s/[^0-9]*([0-9]+\.[0-9]+\.[0-9]+).*/\1/'
 
 skim_temporary_file=$(mktemp)
 # this is strictly speaking, not safe, but considering the usecase I'm okay with it
@@ -12,6 +12,7 @@ RStudio_latest_version="$(curl -IsS http://rstudio.org/download/latest/stable/de
 Skim_latest_version="$(defaults read $skim_temporary_file CFBundleShortVersionString)"
 # the extra .0 is a hack, but leave for now until I see it matters
 Audacity_latest_version="$(curl -sS https://api.github.com/repos/audacity/audacity/releases/latest | grep '"name"' | sed -E $three_part_version).0"
+Firefox_latest_version="$(curl -sS https://product-details.mozilla.org/1.0/firefox_versions.json | grep LATEST_FIREFOX_VERSION | sed -E $three_part_version)"
 
 check_program_version() {
   program="$1"
@@ -39,3 +40,4 @@ check_installed_app calibre "$calibre_latest_version"
 check_installed_app RStudio "$RStudio_latest_version"
 check_installed_app Skim "$Skim_latest_version"
 check_installed_app Audacity "$Audacity_latest_version"
+check_installed_app Firefox "$Firefox_latest_version"
