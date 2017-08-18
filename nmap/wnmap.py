@@ -36,7 +36,6 @@ def find_open_ports_on_host(args):
     print_results(_gather_open_ports(args.addr, verbose=True))
 
 
-
 def parse_args() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(allow_abbrev=False, fromfile_prefix_chars='@')
     subparsers = parser.add_subparsers(help="commands", dest="command")
@@ -66,4 +65,4 @@ def main(argv: List[Text]) -> None:
 
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    main()
