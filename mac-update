@@ -5,13 +5,9 @@
 _three_part_version='[^0-9]*([0-9]+\.[0-9]+(\.[0-9]+)?).*'
 _version_swap_string="s/$_three_part_version/\1/"
 
-skim_temporary_file=$(mktemp)
-# this is strictly speaking, not safe, but considering the usecase I'm okay with it
-curl -sS https://sourceforge.net/p/skim-app/code/HEAD/tree/trunk/Info.plist?format=raw > "$skim_temporary_file.plist"
-
 calibre_latest_version="$(curl -sSk https://code.calibre-ebook.com/latest)"
 RStudio_latest_version="$(curl -IsS http://rstudio.org/download/latest/stable/desktop/mac/RStudio-latest.dmg | grep Location|sed -E s/.*RStudio-$_three_part_version/\1/)"
-Skim_latest_version="$(defaults read $skim_temporary_file CFBundleShortVersionString)"
+Skim_latest_version=$(curl -sS https://sourceforge.net/p/skim-app/code/HEAD/tree/trunk/Info.plist?format=raw |grep -A2 CFBundleShortVersionString | grep string| sed -E "$_version_swap_string")
 # the extra .0 is a hack, but leave for now until I see it matters
 Audacity_latest_version="$(curl -sS https://api.github.com/repos/audacity/audacity/releases/latest | grep '"name"' | sed -E $_version_swap_string).0"
 ScrollReverser_latest_version="$(curl -sS https://api.github.com/repos/pilotmoon/Scroll-Reverser/releases/latest | grep '"name"' | sed -E $_version_swap_string)"
