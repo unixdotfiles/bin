@@ -53,7 +53,7 @@ else
 fi
 gem update --user-install
 sudo npm -g update
-apm update
+apm update --no-confirm
 pip install --user -U $(pip list --format=legacy --outdated | awk '!/Could not|ignored/ {print $1}')
 #cpan -u
 vim -i NONE +PlugUpgrade +qa
