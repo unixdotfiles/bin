@@ -1,18 +1,21 @@
 #!/bin/sh
 # TODO: add error checking, program not exist checking, and non-macOS checking
 
-three_part_version='s/[^0-9]*([0-9]+\.[0-9]+\.[0-9]+).*/\1/'
+
+_three_part_version='[^0-9]*([0-9]+\.[0-9]+(\.[0-9]+)?).*'
+_version_swap_string="s/$_three_part_version/\1/"
 
 skim_temporary_file=$(mktemp)
 # this is strictly speaking, not safe, but considering the usecase I'm okay with it
 curl -sS https://sourceforge.net/p/skim-app/code/HEAD/tree/trunk/Info.plist?format=raw > "$skim_temporary_file.plist"
 
 calibre_latest_version="$(curl -sSk https://code.calibre-ebook.com/latest)"
-RStudio_latest_version="$(curl -IsS http://rstudio.org/download/latest/stable/desktop/mac/RStudio-latest.dmg | grep Location|sed -E $three_part_version)"
+RStudio_latest_version="$(curl -IsS http://rstudio.org/download/latest/stable/desktop/mac/RStudio-latest.dmg | grep Location|sed -E s/.*RStudio-$_three_part_version/\1/)"
 Skim_latest_version="$(defaults read $skim_temporary_file CFBundleShortVersionString)"
 # the extra .0 is a hack, but leave for now until I see it matters
-Audacity_latest_version="$(curl -sS https://api.github.com/repos/audacity/audacity/releases/latest | grep '"name"' | sed -E $three_part_version).0"
-Firefox_latest_version="$(curl -sS https://product-details.mozilla.org/1.0/firefox_versions.json | grep LATEST_FIREFOX_VERSION | sed -E $three_part_version)"
+Audacity_latest_version="$(curl -sS https://api.github.com/repos/audacity/audacity/releases/latest | grep '"name"' | sed -E $_version_swap_string).0"
+Firefox_latest_version="$(curl -sS https://product-details.mozilla.org/1.0/firefox_versions.json | grep LATEST_FIREFOX_VERSION | sed -E $_version_swap_string)"
+UnicodeChecker_latest_version="$(curl -sS -H 'range: bytes=500-900' https://earthlingsoft.net/UnicodeChecker/appcast.xml |grep shortVersionString |cut -d '"' -f 2)"
 
 check_program_version() {
   program="$1"
@@ -41,3 +44,4 @@ check_installed_app RStudio "$RStudio_latest_version"
 check_installed_app Skim "$Skim_latest_version"
 check_installed_app Audacity "$Audacity_latest_version"
 check_installed_app Firefox "$Firefox_latest_version"
+check_installed_app UnicodeChecker "$UnicodeChecker_latest_version"
