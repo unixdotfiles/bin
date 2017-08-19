@@ -14,6 +14,7 @@ RStudio_latest_version="$(curl -IsS http://rstudio.org/download/latest/stable/de
 Skim_latest_version="$(defaults read $skim_temporary_file CFBundleShortVersionString)"
 # the extra .0 is a hack, but leave for now until I see it matters
 Audacity_latest_version="$(curl -sS https://api.github.com/repos/audacity/audacity/releases/latest | grep '"name"' | sed -E $_version_swap_string).0"
+ScrollReverser_latest_version="$(curl -sS https://api.github.com/repos/pilotmoon/Scroll-Reverser/releases/latest | grep '"name"' | sed -E $_version_swap_string)"
 Firefox_latest_version="$(curl -sS https://product-details.mozilla.org/1.0/firefox_versions.json | grep LATEST_FIREFOX_VERSION | sed -E $_version_swap_string)"
 UnicodeChecker_latest_version="$(curl -sS -H 'range: bytes=500-900' https://earthlingsoft.net/UnicodeChecker/appcast.xml |grep shortVersionString |cut -d '"' -f 2)"
 
@@ -45,3 +46,4 @@ check_installed_app Skim "$Skim_latest_version"
 check_installed_app Audacity "$Audacity_latest_version"
 check_installed_app Firefox "$Firefox_latest_version"
 check_installed_app UnicodeChecker "$UnicodeChecker_latest_version"
+check_installed_app 'Scroll Reverser' "$ScrollReverser_latest_version"
