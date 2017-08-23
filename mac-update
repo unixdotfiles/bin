@@ -16,6 +16,7 @@ Dolphin_latest_version="$(curl -sS https://api.github.com/repos/dolphin-emu/dolp
 Firefox_latest_version="$(curl -sS https://product-details.mozilla.org/1.0/firefox_versions.json | grep LATEST_FIREFOX_VERSION | sed -E $_version_swap_string)"
 UnicodeChecker_latest_version="$(curl -sS -H 'range: bytes=500-900' https://earthlingsoft.net/UnicodeChecker/appcast.xml |grep shortVersionString |cut -d '"' -f 2)"
 GalaxyClient_latest_version="$(curl -sS https://cfg.gog.com/desktop-galaxy-updater/4/preview/files-osx.json | grep version | sed -E $_version_swap_string)"
+OnePassword_latest_version=$(curl -sSI https://app-updates.agilebits.com/download/OPM4 | grep Location | sed -E "s/.*-$_three_part_version/\1/")
 
 check_program_version() {
   program="$1"
@@ -50,3 +51,4 @@ check_installed_app UnicodeChecker "$UnicodeChecker_latest_version"
 check_installed_app 'Scroll Reverser' "$ScrollReverser_latest_version"
 check_installed_app Dolphin "$Dolphin_latest_version"
 check_installed_app GalaxyClient "$GalaxyClient_latest_version"
+check_installed_app '1Password 6' "$OnePassword_latest_version"
