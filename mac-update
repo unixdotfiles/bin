@@ -1,5 +1,5 @@
 #!/bin/sh
-# TODO: add error checking, program not exist checking, and non-macOS checking
+# TODO: add error checking  and non-macOS checking
 
 
 _three_part_version='[^0-9]*([0-9]+\.[0-9]+(\.[0-9]+)?).*'
@@ -18,15 +18,19 @@ UnicodeChecker_latest_version="$(curl -sS -H 'range: bytes=500-900' https://eart
 GalaxyClient_latest_version="$(curl -sS https://cfg.gog.com/desktop-galaxy-updater/4/preview/files-osx.json | grep version | sed -E $_version_swap_string)"
 OnePassword_latest_version=$(curl -sSI https://app-updates.agilebits.com/download/OPM4 | grep Location | sed -E "s/.*-$_three_part_version/\1/")
 
+_info_print() {
+  printf "%-30s\t%-30s\t%-30s\n" "$1" "$2" "$3"
+}
+
 check_program_version() {
   program="$1"
   installed="$2"
   current="$3"
   if [ "$installed" != "$current" ]
   then
-    printf "%-30s\t%-30s\t%-30s\n" "$program" "$current" "$installed"
+    _info_print "$program" "$current" "$installed"
   else
-    printf "%-30s\t%-30s\t%-30s\n" "$program" "$current" "up to date"
+    _info_print "$program" "$current" "up to date"
   fi
 }
 
@@ -40,15 +44,31 @@ check_installed_app() {
 
 }
 
-printf "%-30s\t%-30s\t%-30s\n"  "Program" "Latest" "Installed"
+app_exists() {
+  app="$1"
+  [ -e "/Applications/${app}.app" ] 
+}
 
-check_installed_app calibre "$calibre_latest_version"
-check_installed_app RStudio "$RStudio_latest_version"
-check_installed_app Skim "$Skim_latest_version"
-check_installed_app Audacity "$Audacity_latest_version"
-check_installed_app Firefox "$Firefox_latest_version"
-check_installed_app UnicodeChecker "$UnicodeChecker_latest_version"
-check_installed_app 'Scroll Reverser' "$ScrollReverser_latest_version"
-check_installed_app Dolphin "$Dolphin_latest_version"
-check_installed_app GalaxyClient "$GalaxyClient_latest_version"
-check_installed_app '1Password 6' "$OnePassword_latest_version"
+check_app() {
+  app="$1"
+  latest_version="$2"
+  if app_exists "$app"
+  then
+    check_installed_app "$app" "$latest_version"
+  else
+    _info_print "$app" "n/a" "n/a"
+  fi
+}
+
+_info_print "Program" "Latest" "Installed"
+
+check_app calibre "$calibre_latest_version"
+check_app RStudio "$RStudio_latest_version"
+check_app Skim "$Skim_latest_version"
+check_app Audacity "$Audacity_latest_version"
+check_app Firefox "$Firefox_latest_version"
+check_app UnicodeChecker "$UnicodeChecker_latest_version"
+check_app 'Scroll Reverser' "$ScrollReverser_latest_version"
+check_app Dolphin "$Dolphin_latest_version"
+check_app GalaxyClient "$GalaxyClient_latest_version"
+check_app '1Password 6' "$OnePassword_latest_version"
