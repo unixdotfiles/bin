@@ -16,7 +16,7 @@ Skim_latest_version() {
 }
 Audacity_latest_version() {
   # the extra .0 is a hack, but leave for now until I see it matters
-  curl -sS https://api.github.com/repos/audacity/audacity/releases/latest | grep '"name"' | sed -E "$_version_swap_string).0"
+  printf "%s.0" $(curl -sS https://api.github.com/repos/audacity/audacity/releases/latest | grep '"name"' | sed -E "$_version_swap_string")
 }
 ScrollReverser_latest_version() {
   curl -sS https://api.github.com/repos/pilotmoon/Scroll-Reverser/releases/latest | grep -m1 '"name"' | sed -E "$_version_swap_string"
