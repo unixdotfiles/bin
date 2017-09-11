@@ -1,22 +1,41 @@
 #!/bin/sh
-# TODO: add error checking  and non-macOS checking
-
 
 _three_part_version='[^0-9]*([0-9]+\.[0-9]+(\.[0-9]+)?).*'
 _version_swap_string="s/$_three_part_version/\1/"
 
 #TODO: replace grep|sed with awk
-calibre_latest_version="$(curl -sSk https://code.calibre-ebook.com/latest)"
-RStudio_latest_version=$(curl -IsS http://rstudio.org/download/latest/stable/desktop/mac/RStudio-latest.dmg | grep Location|sed -E "s/.*RStudio-$_three_part_version/\1/")
-Skim_latest_version=$(curl -sS https://sourceforge.net/p/skim-app/code/HEAD/tree/trunk/Info.plist?format=raw |grep -A2 CFBundleShortVersionString | grep string| sed -E "$_version_swap_string")
-# the extra .0 is a hack, but leave for now until I see it matters
-Audacity_latest_version="$(curl -sS https://api.github.com/repos/audacity/audacity/releases/latest | grep '"name"' | sed -E $_version_swap_string).0"
-ScrollReverser_latest_version="$(curl -sS https://api.github.com/repos/pilotmoon/Scroll-Reverser/releases/latest | grep -m1 '"name"' | sed -E $_version_swap_string)"
-Dolphin_latest_version="$(curl -sS https://api.github.com/repos/dolphin-emu/dolphin/tags | grep -m2 '"name"' | sed -nE 2${_version_swap_string}p)"
-Firefox_latest_version="$(curl -sS https://product-details.mozilla.org/1.0/firefox_versions.json | grep LATEST_FIREFOX_VERSION | sed -E $_version_swap_string)"
-UnicodeChecker_latest_version="$(curl -sS -H 'range: bytes=500-900' https://earthlingsoft.net/UnicodeChecker/appcast.xml |grep shortVersionString |cut -d '"' -f 2)"
-GalaxyClient_latest_version="$(curl -sS https://cfg.gog.com/desktop-galaxy-updater/4/preview/files-osx.json | grep version | sed -E $_version_swap_string)"
-OnePassword_latest_version=$(curl -sSI https://app-updates.agilebits.com/download/OPM4 | grep Location | sed -E "s/.*-$_three_part_version/\1/")
+
+calibre_latest_version() {
+  curl -sSk https://code.calibre-ebook.com/latest
+}
+RStudio_latest_version() {
+  curl -IsS http://rstudio.org/download/latest/stable/desktop/mac/RStudio-latest.dmg | grep Location|sed -E "s/.*RStudio-$_three_part_version/\1/"
+}
+Skim_latest_version() {
+  curl -sS https://sourceforge.net/p/skim-app/code/HEAD/tree/trunk/Info.plist?format=raw |grep -A2 CFBundleShortVersionString | grep string| sed -E "$_version_swap_string"
+}
+Audacity_latest_version() {
+  # the extra .0 is a hack, but leave for now until I see it matters
+  curl -sS https://api.github.com/repos/audacity/audacity/releases/latest | grep '"name"' | sed -E "$_version_swap_string).0"
+}
+ScrollReverser_latest_version() {
+  curl -sS https://api.github.com/repos/pilotmoon/Scroll-Reverser/releases/latest | grep -m1 '"name"' | sed -E "$_version_swap_string"
+}
+Dolphin_latest_version() {
+  curl -sS https://api.github.com/repos/dolphin-emu/dolphin/tags | grep -m2 '"name"' | sed -nE "2${_version_swap_string}p"
+}
+Firefox_latest_version() {
+  curl -sS https://product-details.mozilla.org/1.0/firefox_versions.json | grep LATEST_FIREFOX_VERSION | sed -E "$_version_swap_string"
+}
+GalaxyClient_latest_version() {
+  curl -sS https://cfg.gog.com/desktop-galaxy-updater/4/preview/files-osx.json | grep version | sed -E "$_version_swap_string"
+}
+OnePassword_latest_version() {
+  curl -sSI https://app-updates.agilebits.com/download/OPM4 | grep Location | sed -E "s/.*-$_three_part_version/\1/"
+}
+UnicodeChecker_latest_version() {
+  curl -sS -H 'range: bytes=500-900' https://earthlingsoft.net/UnicodeChecker/appcast.xml |grep shortVersionString |cut -d '"' -f 2
+}
 
 _info_print() {
   printf "%-30s\t%-30s\t%-30s\n" "$1" "$2" "$3"
@@ -51,9 +70,10 @@ app_exists() {
 
 check_app() {
   app="$1"
-  latest_version="$2"
+  latest_version_fn="$2"
   if app_exists "$app"
   then
+    latest_version="$($latest_version_fn)"
     check_installed_app "$app" "$latest_version"
   else
     _info_print "$app" "n/a" "n/a"
@@ -62,13 +82,13 @@ check_app() {
 
 _info_print "Program" "Latest" "Installed"
 
-check_app calibre "$calibre_latest_version"
-check_app RStudio "$RStudio_latest_version"
-check_app Skim "$Skim_latest_version"
-check_app Audacity "$Audacity_latest_version"
-check_app Firefox "$Firefox_latest_version"
-check_app UnicodeChecker "$UnicodeChecker_latest_version"
-check_app 'Scroll Reverser' "$ScrollReverser_latest_version"
-check_app Dolphin "$Dolphin_latest_version"
-check_app GalaxyClient "$GalaxyClient_latest_version"
-check_app '1Password 6' "$OnePassword_latest_version"
+check_app calibre "calibre_latest_version"
+check_app RStudio "RStudio_latest_version"
+check_app Skim "Skim_latest_version"
+check_app Audacity "Audacity_latest_version"
+check_app Firefox "Firefox_latest_version"
+check_app UnicodeChecker "UnicodeChecker_latest_version"
+check_app 'Scroll Reverser' "ScrollReverser_latest_version"
+check_app Dolphin "Dolphin_latest_version"
+check_app GalaxyClient "GalaxyClient_latest_version"
+check_app '1Password 6' "OnePassword_latest_version"
