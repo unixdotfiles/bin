@@ -38,12 +38,18 @@ fi
 
 (cd ~/bin && ./submodules/update.sh)
 
+_pip_update() {
+  pip="$1"
+  "$pip" install --user -U $("$pip" list --format=legacy --outdated | awk '!/Could not|ignored/ {print $1}')
+}
+
 while true; do sudo -v; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
 if [ -n "$mac" ] && [ "$(uname -s)" = "Darwin" ]
 then
   sudo -H port selfupdate
   port outdated
   sudo -H port -u upgrade outdated
+valid_single_flags="MS"
   softwareupdate -i -a
   mas upgrade
   mac-update
@@ -56,7 +62,9 @@ fi
 gem update --user-install
 sudo npm -g update
 apm update --no-confirm
-pip install --user -U $(pip list --format=legacy --outdated | awk '!/Could not|ignored/ {print $1}')
+_pip_update pip
+_pip_update pip-2.7
+_pip_update pip-3.6
 #cpan -u
 vim -i NONE +PlugUpgrade +qa
 (cd ~/.conf && git commit -m "Update VimPlug config" vim/home/autoload/plug.vim && git push)
