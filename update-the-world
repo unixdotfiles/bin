@@ -7,12 +7,14 @@ quit() {
 
 trap quit INT
 
+mac=1
 selfupdate=1
-while getopts s flag
+while getopts MS flag
 do
   case "$flag" in
-  s)  selfupdate= ;;
-  ?)  printf "Usage: %s: [-s] ...\n" "$0"
+  M)  mac= ;;
+  S)  selfupdate= ;;
+  ?)  printf "Usage: %s: [-MS] ...\n" "$0"
       exit 2;;
   esac
 done
@@ -31,13 +33,13 @@ done
 
 if [ -n "$selfupdate" ]
 then
-  exec "$0" -s "$@";
+  exec "$0" -S "$@";
 fi
 
 (cd ~/bin && ./submodules/update.sh)
 
 while true; do sudo -v; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
-if [ "$(uname -s)" = "Darwin" ]
+if [ -n "$mac" ] && [ "$(uname -s)" = "Darwin" ]
 then
   sudo -H port selfupdate
   port outdated
