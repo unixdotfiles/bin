@@ -1,0 +1,6 @@
+#!/bin/sh
+set -eu
+export GOPATH=~/bin/submodules/go/
+go get github.com/weppos/dnscaa
+cd ~/bin/submodules/dnscaa
+go run cmd/digcaa/digcaa.go -- "$@"
