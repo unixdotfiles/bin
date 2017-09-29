@@ -44,15 +44,18 @@ _pip_update() {
 }
 
 while true; do sudo -v; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
-if [ -n "$mac" ] && [ "$(uname -s)" = "Darwin" ]
+if [ "$(uname -s)" = "Darwin" ]
 then
-  printf "y\nd\n"|sudo -H port reclaim
-  sudo -H port selfupdate
-  port outdated
-  sudo -H port -u upgrade outdated
-  softwareupdate -i -a
-  mas upgrade
-  mac-update
+  if if [ -n "$mac" ]
+  then
+    printf "y\nd\n"|sudo -H port reclaim
+    sudo -H port selfupdate
+    port outdated
+    sudo -H port -u upgrade outdated
+    softwareupdate -i -a
+    mas upgrade
+    mac-update
+  fi
 else
   sudo -H pkg upgrade
   sudo -H apt-get update
