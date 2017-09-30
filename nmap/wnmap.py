@@ -53,14 +53,14 @@ def parse_args() -> argparse.ArgumentParser:
     return parser
 
 
-def main(argv: List[Text]) -> None:
+def main() -> None:
     """
     main entry point for the program
 
     :param argv: args
     """
     parser = parse_args()
-    args = parser.parse_args(argv)
+    args = parser.parse_args()
     args.fn(args)
 
 
