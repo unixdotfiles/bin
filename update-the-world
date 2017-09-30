@@ -46,7 +46,7 @@ _pip_update() {
 while true; do sudo -v; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
 if [ "$(uname -s)" = "Darwin" ]
 then
-  if if [ -n "$mac" ]
+  if [ -n "$mac" ]
   then
     printf "y\nd\n"|sudo -H port reclaim
     sudo -H port selfupdate
