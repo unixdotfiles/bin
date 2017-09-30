@@ -50,6 +50,11 @@ def parse_args() -> argparse.ArgumentParser:
     foph_parser.add_argument("--addr", type=str, required=True)
     foph_parser.set_defaults(fn=find_open_ports_on_host)
 
+    ssl_information_parser = subparsers.add_parser("ssl-info")
+    ssl_information_parser.add_argument("--addr", type=str, required=True)
+    #ssl_information_parser.set_defaults(fn=ssl_info)
+    #nmap -sV --script ssl-enum-ciphers -p 443 google.com
+
     return parser
 
 
