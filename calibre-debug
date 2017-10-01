@@ -1,0 +1,10 @@
+#!/bin/sh
+
+quit() {
+  exit 1
+}
+
+trap quit INT
+
+export CALIBRE_DEVELOP_FROM=/Users/eax/svn/calibre
+/Applications/calibre.app/Contents/console.app/Contents/MacOS/calibre-debug -g
