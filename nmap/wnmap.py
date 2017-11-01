@@ -3,7 +3,6 @@
 
 
 import argparse
-import sys
 
 from typing import List, Text
 
@@ -13,10 +12,20 @@ import nmap
 _HTTP_PORTS="80,443,8000,8443"
 
 
-def print_results(n) -> None:
+def print_open_ports(n) -> None:
     for host in n.all_hosts():
         open_ports = [port for port in n[host]["tcp"] if n[host]["tcp"][port]['state'] == "open"]
         print("{}: {}".format(host, open_ports))
+
+
+def print_script_output(n) -> None:
+    for host in n.all_hosts():
+        for port in n[host]['tcp']:
+            if 'script' not in n[host]['tcp'][port]:
+                continue
+            print(f'{host}:{port}')
+            for script in n[host]['tcp'][port]['script']:
+                print(n[host]['tcp'][port]['script'][script])
 
 
 def _gather_open_ports(cidr: Text, ports=_HTTP_PORTS, verbose=False):
@@ -29,11 +38,20 @@ def _gather_open_ports(cidr: Text, ports=_HTTP_PORTS, verbose=False):
 
 
 def find_open_http_ports(args):
-    print_results(_gather_open_ports(args.cidr, verbose=args.verbose))
+    print_open_ports(_gather_open_ports(args.cidr, verbose=args.verbose))
 
 
 def find_open_ports_on_host(args):
-    print_results(_gather_open_ports(args.addr, verbose=True))
+    print_open_ports(_gather_open_ports(args.addr, verbose=True))
+
+def _run_script(args, script):
+    n = nmap.PortScanner()
+    n.scan(args.addr, ports=_HTTP_PORTS, arguments=f'--script {script}', sudo=False)
+    return n
+
+def ssl_info(args):
+    n = _run_script(args, 'ssl-enum-ciphers')
+    print_script_output(n)
 
 
 def parse_args() -> argparse.ArgumentParser:
@@ -52,8 +70,7 @@ def parse_args() -> argparse.ArgumentParser:
 
     ssl_information_parser = subparsers.add_parser("ssl-info")
     ssl_information_parser.add_argument("--addr", type=str, required=True)
-    #ssl_information_parser.set_defaults(fn=ssl_info)
-    #nmap -sV --script ssl-enum-ciphers -p 443 google.com
+    ssl_information_parser.set_defaults(fn=ssl_info)
 
     return parser
 
