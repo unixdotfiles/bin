@@ -23,3 +23,6 @@
 [submodule "submodules/dnscaa"]
 	path = submodules/dnscaa
 	url = git@github.com:weppos/dnscaa.git
+[submodule "submodules/mimic"]
+	path = submodules/mimic
+	url = https://github.com/reinderien/mimic.git
