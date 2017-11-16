@@ -52,7 +52,7 @@ then
     sudo -H port selfupdate
     port outdated
     sudo -H port -u upgrade outdated
-    softwareupdate -i -a
+    softwareupdate -i -a --verbose
     mas upgrade
     mac-update
   fi
