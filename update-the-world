@@ -5,6 +5,15 @@ quit() {
   exit 1
 }
 
+__exists () {
+  while [ -n "$1" ];
+  do
+    cmd="$1"; shift
+    which "$cmd" >/dev/null 2>&1 || return 1
+  done
+  return 0;
+}
+
 trap quit INT
 
 mac=1
@@ -56,10 +65,13 @@ then
     mas upgrade
     mac-update
   fi
-else
-  sudo -H pkg upgrade
+elif [ "$(uname -s)" = "Linux" ]
+then
   sudo -H apt-get update
   sudo -H apt-get dist-upgrade
+  sudo -H yum upgrade
+else
+  sudo -H pkg upgrade
 fi
 gem update --user-install
 sudo npm -g update
