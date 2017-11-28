@@ -49,7 +49,7 @@ fi
 
 _pip_update() {
   pip="$1"
-  "$pip" install --user -U $("$pip" list --format=legacy --outdated | awk '!/Could not|ignored/ {print $1}')
+  __exists "$pip" && "$pip" install --user -U $("$pip" list --format=legacy --outdated | awk '!/Could not|ignored/ {print $1}')
 }
 
 while true; do sudo -v; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
@@ -67,9 +67,11 @@ then
   fi
 elif [ "$(uname -s)" = "Linux" ]
 then
-  sudo -H apt-get update
-  sudo -H apt-get dist-upgrade
-  sudo -H yum upgrade
+  __exists apt-get && sudo -H apt-get update
+  __exists apt-get && sudo -H apt-get dist-upgrade
+  __exists yum && sudo -H yum upgrade
+  __exists pacman && sudo -H pacman -Syu
+  __exists emerge && sudo -H emerge --update --deep world
 else
   sudo -H pkg upgrade
 fi
