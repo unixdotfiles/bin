@@ -9,6 +9,6 @@ args = parser.parse_args()
 number = eval(args.value[0])
 
 print("dec: ", format(number, "d"))
-print("hex: ", format(number, "x"))
+print("hex: ", format(number, "X"))
 print("oct: ", format(number, "o"))
 print("bin: ", format(number, "b"))
