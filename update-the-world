@@ -14,13 +14,22 @@ __exists () {
   return 0;
 }
 
+__sudo() {
+  if [ -n "$doroot" ]
+  then
+    sudo "$@"
+  fi
+}
+
 trap quit INT
 
 mac=1
 selfupdate=1
-while getopts MS flag
+doroot=1
+while getopts RMS flag
 do
   case "$flag" in
+  R)  doroot= ;;
   M)  mac= ;;
   S)  selfupdate= ;;
   ?)  printf "Usage: %s: [-MS] ...\n" "$0"
@@ -52,31 +61,31 @@ _pip_update() {
   __exists "$pip" && "$pip" install --user -U $("$pip" list --format=legacy --outdated | awk '!/Could not|ignored/ {print $1}')
 }
 
-while true; do sudo -v; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
+while true; do __sudo -v; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
 if [ "$(uname -s)" = "Darwin" ]
 then
   if [ -n "$mac" ]
   then
-    printf "y\nd\n"|sudo -H port reclaim
-    sudo -H port selfupdate
+    printf "y\nd\n"|__sudo -H port reclaim
+    __sudo -H port selfupdate
     port outdated
-    sudo -H port -u upgrade outdated
+    __sudo -H port -u upgrade outdated
     softwareupdate -i -a --verbose
     mas upgrade
     mac-update
   fi
 elif [ "$(uname -s)" = "Linux" ]
 then
-  __exists apt-get && sudo -H apt-get update
-  __exists apt-get && sudo -H apt-get dist-upgrade
-  __exists yum && sudo -H yum upgrade
-  __exists pacman && sudo -H pacman -Syu
-  __exists emerge && sudo -H emerge --update --deep world
+  __exists apt-get && __sudo -H apt-get update
+  __exists apt-get && __sudo -H apt-get dist-upgrade
+  __exists yum && __sudo -H yum upgrade
+  __exists pacman && __sudo -H pacman -Syu
+  __exists emerge && __sudo -H emerge --update --deep world
 else
-  sudo -H pkg upgrade
+  __sudo -H pkg upgrade
 fi
 gem update --user-install
-sudo npm -g update
+__sudo npm -g update
 apm update --no-confirm
 _pip_update pip
 _pip_update pip-2.7
