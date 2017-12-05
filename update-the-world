@@ -26,13 +26,13 @@ trap quit INT
 mac=1
 selfupdate=1
 doroot=1
-while getopts RMS flag
+while getopts MRS flag
 do
   case "$flag" in
   R)  doroot= ;;
   M)  mac= ;;
   S)  selfupdate= ;;
-  ?)  printf "Usage: %s: [-MS] ...\n" "$0"
+  ?)  printf "Usage: %s: [-MRS] ...\n" "$0"
       exit 2;;
   esac
 done
