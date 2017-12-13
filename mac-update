@@ -46,6 +46,10 @@ UnicodeChecker_latest_version() {
   curl -sS -H 'range: bytes=500-900' https://earthlingsoft.net/UnicodeChecker/appcast.xml |grep shortVersionString |cut -d '"' -f 2
 }
 
+Atom_latest_version() {
+  curl -s https://api.github.com/repos/atom/atom/releases/latest | grep -m1 '"name"' | sed -E "$_version_swap_string"
+}
+
 _info_print() {
   printf "%-30s\t%-30s\t%-30s\n" "$1" "$2" "$3"
 }
@@ -101,3 +105,4 @@ check_app Dolphin "Dolphin_latest_version"
 check_app 'GOG Galaxy' "GalaxyClient_latest_version"
 check_app '1Password 6' "OnePassword_latest_version"
 check_app 'Hex Fiend' "HexFiend_latest_version"
+check_app 'Atom' "Atom_latest_version"
