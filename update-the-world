@@ -99,3 +99,4 @@ rustup self update
 cargo search # update registry
 stack upgrade
 stack update
+R -e 'options(warn = 0); update.packages(ask = FALSE)'
