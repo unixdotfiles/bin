@@ -1,0 +1,6 @@
+#!/bin/sh
+(
+  export GOPATH=~/bin/submodules/go/
+  go get -u github.com/bnagy/cgasm
+)
+exec ~/bin/submodules/go/bin/cgasm "$@"
