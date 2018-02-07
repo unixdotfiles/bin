@@ -1,0 +1,2220 @@
+#!/usr/bin/env perl
+# ts=4
+# Warren Block
+# special thanks to Glen Barber for limitless
+# patience and the use of his svn repository
+
+# igor: check man pages and DocBook
+# needs Perl 5.8 or higher
+
+use strict;
+use warnings;
+use locale;
+
+#  Copyright (c) 2012, 2013, 2014 Warren Block
+#  All rights reserved.
+#
+#  Redistribution and use in source and binary forms, with or without
+#  modification, are permitted provided that the following conditions
+#  are met:
+#  1. Redistributions of source code must retain the above copyright
+#     notice, this list of conditions and the following disclaimer.
+#  2. Redistributions in binary form must reproduce the above copyright
+#     notice, this list of conditions and the following disclaimer in the
+#     documentation and/or other materials provided with the distribution.
+#
+#  THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+#  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+#  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+#  ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+#  FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+#  DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+#  OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+#  HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+#  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+#  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+#  SUCH DAMAGE.
+
+use Getopt::Std;
+use File::Basename;
+use POSIX qw/strftime/;
+
+my $file  = "/usr/bin/file";
+my $gzcat = "/usr/bin/gzcat";
+my $bzcat = "/usr/bin/bzcat";
+my $man   = "/usr/bin/man";
+
+my $tmpdir = "/tmp";
+
+my $rev = '$Revision$';
+
+my ($fh, $tmpfile, $stdinfile, $docdate);
+
+my ($prevline, $prevnonblank, $origline) = ('', '');
+my $ignoreblock;
+my $titleblock = 0;
+my $today;
+
+my $linelensgml;
+my ($startline, $stopline);
+my $vid;
+my ($ignoreblockstart, $ignoreblockend);
+my %misspelled_words;
+my @badphrases;
+my @contractions;
+my @freebsdobs;
+my ($lc_regex, $uc_regex, $fixedcase_regex, $ignoreregex);
+my ($indent_regex, $inline_regex);
+my ($redundantword_regex, $redundanttagword_regex);
+my (@straggler_tags, $literalblock_regex);
+my $eos_regex;
+my (@openclose_tags, $openclose_regex, %opentag, $list_regex, $parawrap_regex);
+
+my ($bname, $type);
+
+my $prog = basename($0);
+
+sub usage {
+	$rev =~ /Revision: (\d+)/;
+	my $version = "1.$1";
+	print <<USAGE;
+$prog $version
+usage: $prog -h
+       $prog [-abcdefilmnorstuwxyzDERSWXZ] [-C range] [-L n] file [file ...]
+
+    -h  show summary of command line options and exit
+
+    Output options
+        -R        ANSI highlights (use with 'less -R')
+        -C range  Restrict output to a range of lines from the source file
+        -v        Verbose output
+        -V vid    Restrict output to a VID (or 'latest') in a VuXML file
+        -X        XML output (overrides -R)
+
+    Tests
+        If individual test options are given, only those tests are done.
+
+    Shortcuts
+        -z  all standard non-whitespace tests
+        -Z  all standard whitespace tests
+
+    Tests for all files
+        -a  abbreviations like "e.g.," and "i.e.,"
+        -b  bad phrases
+        -f  FreeBSD obsolete features
+        -r  repeated words
+        -s  spelling
+        -u  contractions
+        -w  whitespace
+        -y  style suggestions (off by default)
+
+    mdoc(7) tests
+        -d  document date (.Dd)
+        -e  sentences should begin on a new line
+        -g  See Also xrefs are not duplicated
+        -m  mdoc structure requirements
+        -p  mdoc whitespace requirements
+        -x  additional xref (.Xr) tests (off by default, implies -m)
+        -D  all but document date (same as -abefmrsuw)
+
+    DocBook tests
+        -c  title capitalization
+        -i  indentation
+        -l  long lines (see -L below)
+        -n  sentences start with two spaces
+        -o  open/close tags match
+        -t  tag usage style
+        -E  writing style
+        -S  straggler tags with undesired content whitespace
+        -W  whitespace on SGML indentation
+
+    DocBook test options
+        -L n  set line length used in long line test (default 70)
+
+    EXAMPLES
+
+        $prog -R gpart.8.gz | less -R -S
+        $prog -R -D -y /usr/share/man/man7/tuning.7.gz | less -R -S
+        cat /usr/share/man/man1/csh.1.gz | $prog -D
+        $prog -Rz chapter.sgml | less -RS
+        $prog -R `find /usr/doc/en_US.ISO8859-1/ -name "*.xml"` | less -RS
+        $prog -RD /usr/share/man/man8/* | less -RS
+
+    gzip and bzip2 files are automatically decompressed.
+USAGE
+	exit 0;
+}
+
+our ($opt_a, $opt_b, $opt_c, $opt_d, $opt_e, $opt_f, $opt_g, $opt_h,
+	 $opt_i, $opt_l, $opt_m, $opt_n, $opt_o, $opt_p, $opt_r, $opt_s,
+	 $opt_t, $opt_u, $opt_v, $opt_w, $opt_x, $opt_y, $opt_z, $opt_C,
+	 $opt_E, $opt_D, $opt_L, $opt_R, $opt_S, $opt_V, $opt_W, $opt_X,
+	 $opt_Z);
+
+getopts('abcdefghilmnoprstuvwxyzC:DEL:RSV:WXZ');
+
+usage() if $opt_h;
+
+my $verbose = 1 if $opt_v;
+
+# ANSI color codes
+my @colors = qw/ red green yellow blue magenta cyan /;
+my %ansi;
+my $inverse  = "\033[7m";
+my $reset    = "\033[0;24;27m";
+my $lf = '';	# filename
+my $rf = '';
+my $ll = '';	# line number
+my $lr = '';
+my $lh = '[';	# highlight
+my $rh = ']';
+my $li = '[';	# whitespace
+my $ri = ']';
+
+# mdoc SEE ALSO section flag and xrefs
+my $seealso = 0;
+my %seealsoxrefs;
+
+# mdoc macros
+my @macros = (qw/ Dd Dt Os Sh_NAME Nm Nd Sh_SYNOPSIS Sh_DESCRIPTION /);
+my %macroval;
+
+sub INT_handler {
+	( close $fh or die "could not close filehandle:$!\n" ) if fileno($fh);
+	removetempfiles();
+	exit 0;
+}
+
+sub initialize {
+	$today = strftime("%B %e, %Y", localtime);
+	$today =~ s/  / /g;
+
+	# ANSI color codes
+	for my $i (0..@colors-1) {
+		$ansi{"dark$colors[$i]"} = "\033["   . ($i+31) . "m";
+		$ansi{"$colors[$i]"}     = "\033[1;" . ($i+31) . "m";
+	}
+	# minor hackery: darkblue is so dark it needs a white background
+	$ansi{"darkblue"} = $ansi{"darkblue"} . "\033[47m";
+
+	# use ANSI highlights
+	if ( $opt_R ) {
+		$lf = $ansi{darkyellow};	# filename
+		$rf = $reset;
+		$ll = $ansi{darkcyan};		# line number
+		$lr = $reset;
+		$lh = $ansi{darkgreen};		# highlight
+		$rh = $reset;
+		$li = $inverse;				# whitespace
+		$ri = $reset;
+	}
+
+	# SGML line length
+	$linelensgml = 70;
+	if ( defined($opt_L) && ($opt_L =~ /(\d+)/) ) {
+		$linelensgml = $1 if $1 > 0;
+	}
+
+	# -C start-end limits output to a range of lines
+	if ( $opt_C ) {
+		($startline, $stopline) = split(':|-', $opt_C);
+		die "-C option requires a line number range (start- | start-end | -end)\n" unless $startline || $stopline;
+	}
+
+	# -V vid limits output to a range of lines
+	if ( $opt_V ) {
+		$vid = $opt_V;
+		unless ($vid eq 'latest' || $vid =~/.*-.*-/) {
+			die "-V requires vulnerability ID like 348bfa69-25a2-11e5-ade1-0011d823eebd\n";
+		}
+		$startline=999999;
+		$stopline = $startline;
+	}
+
+	# -D equals -abefgmprsuw
+	if ( $opt_D ) {
+		$opt_a = $opt_b = $opt_e = $opt_f = $opt_g = $opt_m = $opt_p
+			   = $opt_r = $opt_s = $opt_u = $opt_w = 1;
+	}
+
+	if ( $opt_z ) {
+		# all non-whitespace tests
+		$opt_a = $opt_b = $opt_c = $opt_d = $opt_e = $opt_f = $opt_g
+			   = $opt_m = $opt_o = $opt_p = $opt_r = $opt_s = $opt_u
+			   = $opt_E = $opt_S = 1;
+	}
+
+	if ( $opt_Z ) {
+		# all whitespace tests
+		$opt_i = $opt_l = $opt_n = $opt_t = $opt_w = $opt_W = 1;
+	}
+
+	if ( $opt_x ) {
+		# -x implies -m
+		$opt_m = 1;
+	}
+
+	# if no tests are chosen, do them all
+	unless ( $opt_a || $opt_b || $opt_c || $opt_d || $opt_e
+		  || $opt_f || $opt_g || $opt_i || $opt_l || $opt_m
+		  || $opt_n || $opt_o || $opt_p || $opt_r || $opt_s
+		  || $opt_t || $opt_u || $opt_w || $opt_x || $opt_y
+		  || $opt_E || $opt_S || $opt_W ) {
+		$opt_a = $opt_b = $opt_c = $opt_d = $opt_e
+			   = $opt_f = $opt_g = $opt_i = $opt_l = $opt_m
+			   = $opt_n = $opt_o = $opt_p = $opt_r = $opt_s
+			   = $opt_t = $opt_u = $opt_w = $opt_E = $opt_S
+			   = $opt_W = 1;
+		$opt_x = $opt_y = 0;
+	}
+
+	init_ignoreblocks();
+	init_spellingerrors();
+	init_badphrases();
+	init_contractions();
+	init_freebsdobs();
+	init_doc_titles();
+	init_doc_indentation();
+	init_doc_sentence();
+	init_doc_openclose();
+	init_literalblock_regex();
+	init_doc_writestyle();
+	init_doc_stragglers();
+
+	# ctrl-c handler
+	$SIG{'INT'} = 'INT_handler';
+	# do the same thing if the pipe closes
+	$SIG{'PIPE'} = 'INT_handler';
+
+	# autoflush
+	$| = 1;
+
+	# allow stdin
+	push @ARGV, "stdin" if $#ARGV < 0;
+}
+
+sub firstext {
+	my $fname = shift;
+	my $ext = '';
+	if ( basename($fname) =~ /\.(.*?)(?:\.|$)/ ) {
+		$ext = $1;
+	}
+	return $ext;
+}
+
+sub lastext {
+	my $fname = shift;
+	my $ext = '';
+	if ( basename($fname) =~ /\.([^.]*?)$/ ) {
+		$ext = $1;
+	}
+	return $ext;
+}
+
+sub baseonly {
+	my $fname = shift;
+	$fname = basename($fname);
+	$fname =~ s/\..*$//;
+	return $fname;
+}
+
+sub tmpfilename {
+	my $fname = shift;
+	my $ext = firstext($fname);
+	my $name = baseonly($fname);
+	return "$tmpdir/$prog-tmp-$$-$name.$ext";
+}
+
+sub filetype {
+	my $fname = shift;
+	# detect type from extension if possible
+	my $ext = lastext($fname);
+	if ( $ext ) {
+		print "detecting file type by extension: '$ext'\n" if $verbose;
+		for ( $ext ) {
+			if    ( /\d{1}/ ) { return "troff"   }
+			elsif ( /bz2/i  ) { return "bzip"    }
+			elsif ( /gz/i   ) { return "gzip"    }
+			elsif ( /sgml/i ) { return "sgml"    }
+			elsif ( /xml/i  ) { return "xml"     }
+			else              { return "unknown" }
+		}
+	}
+	# fall back to file(1)
+	print "detecting file type with file(1)\n" if $verbose;
+	my $out = `$file -b $fname`;
+	$out =~ /^(\S+\s+\S+)/;	# first two words
+	if ( $1 ) {
+		my $id = $1;
+		for ( $id ) {
+			if    ( /^troff/ )         { return "troff"   }
+			elsif ( /^exported SGML/ ) { return "sgml"    }
+			# some DocBook documents are detected as "Lisp/Scheme"
+			elsif ( /^Lisp\/Scheme/ )  { return "sgml"    }
+			elsif ( /^gzip/ )          { return "gzip"    }
+			elsif ( /^bzip/ )          { return "bzip"    }
+			else                       { return "unknown" }
+		}
+	}
+	return "unknown";
+}
+
+sub uncompress {
+	my ($fname, $type) = @_;
+	my $tmpfile = tmpfilename($fname);
+	print "uncompressing '$fname' to '$tmpfile'\n" if $verbose;
+	for ( $type ) {
+		if ( /gzip/ ) {
+			system("$gzcat $fname > $tmpfile") == 0
+				or die "could not create '$tmpfile':$!\n";
+		}
+		elsif ( /bzip/ ) {
+			system("$bzcat $fname > $tmpfile") == 0
+				or die "could not create '$tmpfile':$!\n";
+		}
+		else {
+			die "unknown compression type '$type'\n";
+		}
+	}
+	return $tmpfile;
+}
+
+sub writestdinfile {
+	$stdinfile = "$tmpdir/$prog-stdin.$$";
+	open $fh, ">", $stdinfile or die "could not create '$stdinfile':$!\n";
+	print $fh <STDIN>;
+	close $fh or die "could not close '$stdinfile':$!\n";
+	return $stdinfile;
+}
+
+sub removetempfiles {
+	if ( $stdinfile && -f $stdinfile ) {
+		print "deleting stdinfile '$stdinfile'\n" if $verbose;
+		unlink $stdinfile or die "could not remove '$stdinfile':$!\n";
+	}
+	if ( $tmpfile && -f $tmpfile ) {
+		print "deleting tmpfile '$tmpfile'\n" if $verbose;
+		unlink $tmpfile   or die "could not remove '$tmpfile':$!\n";
+	}
+}
+
+sub xmlize {
+	my $txt = shift;
+	$txt =~ s/'/&apos;/g;
+	$txt =~ s/"/&quot;/g;
+	$txt =~ s/</&lt;/g;
+	$txt =~ s/>/&gt;/g;
+	return $txt;
+}
+
+sub showline {
+	my ($bname, $linenum, $color, $errordesc, $txt) = @_;
+	# limit output to line number range
+	return if $startline && ($. < $startline);
+	if ( !$opt_X ) {
+		print "$lf$bname$rf:";
+		print "$ll$linenum$lr:";
+		print $color if $opt_R;
+		print "$errordesc";
+		print $reset if $opt_R;
+		print ":$txt\n";
+	} else {
+		print "    <error ";
+		print "line=\"$linenum\" ";
+		# these two are not presently implemented in igor
+		print "column=\"1\" ";
+		print "severity=\"warning\" ";
+		#
+		print "message=\"", xmlize($errordesc), "\" ";
+		print "source=\"$prog\"";
+		print "/>\n";
+	}
+}
+
+sub is_lowercase {
+	my $word = shift;
+	return $word =~ /^[a-z]{1}/;
+}
+
+sub is_uppercase {
+	my $word = shift;
+	return $word =~ /^[A-Z]{1}/;
+}
+
+sub highlight_word {
+	my ($txt, $word) = @_;
+	$txt =~ s/\Q$word\E/$lh$word$rh/g;
+	return $txt;
+}
+
+sub highlight_string {
+	my $txt = shift;
+	return "$lh$txt$rh";
+}
+
+sub expand_tabs {
+	my $txt = shift;
+	$txt =~ s/\t/        /g;
+	return $txt;
+}
+
+sub leading_space {
+	my $txt = shift;
+	my $leading;
+	$txt =~ /^(\s+)/;
+	$leading = ($1 ? $1 : '');
+	$leading = expand_tabs($leading);
+	return $leading;
+}
+
+sub splitter {
+	my $txt = shift;
+	return ($txt) unless ( $txt =~ /$ignoreblockstart|$ignoreblockend/ );
+	my @split = split /($ignoreblockstart|$ignoreblockend)/, $txt;
+	return grep { ! /^\s*$/ } @split;
+}
+
+sub init_ignoreblocks {
+	print "initializing ignoreblocks\n" if $verbose;
+	# create regex for sgml block start and end
+	my @ignoreblock_tags = qw/ literallayout screen programlisting /;
+	$ignoreblockstart = '(?:<!--|<!\[';
+	for my $tag (@ignoreblock_tags) {
+		$ignoreblockstart .= "|<$tag.*?>";
+	}
+	$ignoreblockstart .= ')';
+	$ignoreblockend = '(?:-->|\]\]>';
+	for my $tag (@ignoreblock_tags) {
+		$ignoreblockend .= "|<\/$tag>";
+	}
+	$ignoreblockend .= ')';
+}
+
+sub showwhitespace {
+	my $txt = shift;
+	$txt =~ s/\t/{tab}/g;
+	return $txt;
+}
+
+# global tests
+
+sub abbrevs {
+	my ($bname, $line, $txt) = @_;
+	return if $txt =~ /^\s*$/;
+	return if $ignoreblock;
+	my $txtbak = $txt;;
+
+	if ( $txt =~ /(?:\W|^)c\.f\./i ) {
+		$txt =~ s/(c\.f\.)/$lh$1$rh/i;
+		showline($bname, $line, $ansi{darkmagenta}, 'use "cf."', $txt);
+	}
+
+	$txt = $txtbak;
+	if ( $txt =~ /(?:\W|^)e\.?g\.(?:[^,:]|$)/ ) {
+		$txt =~ s/(e\.?g\.)/$lh$1$rh/;
+		showline($bname, $line, $ansi{darkmagenta}, 'no comma after "e.g."', $txt);
+	}
+
+	$txt = $txtbak;
+	if ( $txt =~ /(?:\W|^)i\.?e\.(?:[^,:]|$)/ ) {
+		$txt =~ s/(i\.?e\.)/$lh$1$rh/;
+		showline($bname, $line, $ansi{darkmagenta}, 'no comma after "i.e."', $txt);
+	}
+
+	$txt = $txtbak;
+	if ( $txt =~ /(?:\W|^)a\.k\.a\./i ) {
+		$txt =~ s/(a\.k\.a\.)/$lh$1$rh/i;
+		showline($bname, $line, $ansi{darkmagenta}, 'use "aka" (AP style)', $txt);
+	}
+
+	$txt = $txtbak;
+	if ( $txt =~ /(?:\W|^)v\.?s(?:\.|\s|$)/i ) {
+		$txt =~ s/(v\.?s\.)/$lh$1$rh/i;
+		showline($bname, $line, $ansi{darkmagenta}, '"versus" abbreviated', $txt);
+	}
+}
+
+sub init_badphrases {
+	print "initializing badphrases\n" if $verbose;
+	@badphrases = ('2nd', '3rd', '3way', '4th', '5th','allow to',
+				   'allows to', 'become gain', 'be also', 'been also',
+				   'being build', 'can not', "chroot'd", "compress'd",
+				   'could might', 'could of', 'equally as', 'for to',
+				   "ftp'd", 'get take', "gzip'd", 'in on', 'it self',
+				   'may will', "mfc'ed", 'might could', 'often are'
+				   ,"or'ing", 'that without', 'the a', 'the each',
+				   'the to', 'this mean that', 'to can', 'to for',
+				   'to of', 'to performs', 'will has', 'with to',
+				   'would of',);
+}
+
+sub badphrases {
+	my ($bname, $line, $txt) = @_;
+	my $txtbak = $txt;
+	return if $txt =~ /^\s*$/;
+
+	for my $bad (@badphrases) {
+		$txt = $txtbak;
+		# check for a loose but fast match first
+		if ( $txt =~ /\Q$bad\E/i ) {
+			if ( $txt =~ s/\b(\Q$bad\E)\b/$lh$1$rh/i ) {
+				showline($bname, $line, $ansi{yellow}, 'bad phrase', $txt);
+			}
+		}
+
+		# detect bad phrases wrapping over two lines
+		# skip this test if the phrase was all on the previous line
+		next if ( $prevline =~ /\Q$bad\E\b/i );
+
+		$txt = "$prevline $txtbak";
+		if ( $txt =~ /\Q$bad\E\b/i ) {
+			my @right = split /\s/, $bad;
+			my @left  = ();
+			my $leftstr = '';
+			while ( @right ) {
+				push @left, shift @right;
+				$leftstr = join ' ',@left;
+				last if ( $prevline =~ /(\Q$leftstr\E)\s*$/i );
+			}
+			unless ( $leftstr =~ /\Q$bad\E/ ) {
+				showline($bname, $line - 1, $ansi{yellow}, 'bad phrase',
+					"... $lh$leftstr$rh");
+				$txt = $txtbak;
+				my $rightstr = join ' ', @right;
+				$txt =~ s/(\Q$rightstr\E)/$lh$1$rh/i;
+				showline($bname, $line, $ansi{yellow}, 'bad phrase', $txt);
+			}
+		}
+	}
+}
+
+sub init_contractions {
+	print "initializing contractions\n" if $verbose;
+	@contractions = ("aren't", "can't", "doesn't", "don't", "hasn't",
+					 "i'll", "i'm", "isn't", "it's", "i've", "let's",
+					 "shouldn't", "that's", "they'll", "you're",
+					 "you've", "we'd", "we'll", "we're", "we've",
+					 "won't", "would've");
+}
+
+sub contractions {
+	my ($bname, $line, $txt) = @_;
+	my $txtbak = $txt;
+	return if $txt =~ /^\s*$/;
+
+	for my $con (@contractions) {
+		$txt = $txtbak;
+		if ( $txt =~ /\Q$con\E/i ) {
+			if ( $txt =~ s/\b(\Q$con\E)\b/$lh$1$rh/i ) {
+				showline($bname, $line, $ansi{yellow}, 'contraction', $txt);
+			}
+		}
+	}
+}
+
+sub init_freebsdobs {
+	print "initializing FreeBSDobs\n" if $verbose;
+	@freebsdobs = qw/ cvsup /;
+}
+
+sub freebsdobsolete {
+	my ($bname, $line, $txt) = @_;
+	return if $txt =~ /^\s*$/;
+
+	for my $word (@freebsdobs) {
+		if ( $txt =~ s/(\s+)($word)([^.]+.*)$/$1$lh$2$lr$3/ ) {
+			showline($bname, $line, $ansi{darkgreen}, 'freebsd-obsolete', $txt);
+		}
+	}
+}
+
+sub repeatedwords {
+	my ($bname, $line, $txt) = @_;
+	return if $txt =~ /^\s*$/;
+
+	my $txtbak = $txt;
+	my %count = ();
+	my @words = grep(! /^\s*$/, split /\b/, $txt);
+	map { $count{$_}++ } @words;
+	my @multiples = grep { $count{$_} > 1 } keys %count;
+	#for my $word (keys %count) {
+	for my $word (@multiples) {
+		# skip special cases
+		# repeated numbers
+		next if $word =~ /\d{1}/;
+		# repeated slashes
+		next if $word eq '/';
+		# repeated rows of dashes
+		next if $word =~ /-+/;
+		# repeated rows of underscores
+		next if $word =~ /_+/;
+		# skip some mdoc commands
+		next if $word =~ /Fl|Ns|Oc|Oo/;
+		$txt = $txtbak;
+		if ( $txt =~ s/\b(\Q$word\E\s+\Q$word\E)\b/$lh$1$rh/i ) {
+			print "repeatedwords: repeat found:'$word'\n" if $verbose;
+			showline($bname, $line, $ansi{darkred}, 'repeated', $txt);
+		}
+	}
+	# check for repeated word from the end of the previous line
+	# to the beginning of the current line
+	# $prevline =~ m%(\w+\s+)*([^ *.#|+-]+\s*)$%;
+	$prevline =~ m%(\w+\s+)*(\S+\s*)$%;
+	my $cmd = ($1 ? $1 : '');
+	my $prevlastword = ($2 ? $2 : '');
+	# short-circuit when the previous line...
+	# had no last word
+	return unless $prevlastword;
+	# didn't repeat any of the words on the current line
+	$count{$prevlastword}++;
+	return unless $count{$prevlastword} > 1;
+	# was a groff(7) comment
+	return if $prevlastword eq '.c';
+	# was a groff(7) zero-space character for tables (\&.)
+	return if $prevlastword eq '\&.';
+	# was a single non-word character
+	return if $prevlastword =~ /^\W{1}$/;
+	# was an mdoc(7) or nroff(7) comment
+	return if $prevlastword =~ /^\W{1}\\\"/;
+	# was an mdoc command
+	return if $prevlastword =~ /\.(?:Ar|Oo|Nm|Tp)/i;
+	# when the next-to-last word was an mdoc command
+	return if $cmd =~ /Ar |Cm |Fa |Em |Ic |Ip |It |Li |Pa |Ss /i;
+	if ( $txt =~ s/^\s*(\Q$prevlastword\E)(\s+.*)$/$lh$1$rh$2/ ) {
+		showline($bname, $line - 1, $ansi{darkred}, 'repeated',
+			"... $cmd$lh$prevlastword$rh");
+		showline($bname, $line, $ansi{darkred}, 'repeated', $txt);
+	}
+}
+
+# read an external file of spelling errors
+# the misspelled word is the first sequence of \w or ' characters
+# up to a non-word character
+sub readspelling {
+	my $spname = shift;
+	my $added = 0;
+	print "adding spelling file '$spname'\n" if $verbose;
+	open my $sf, '<', $spname or die "cannot open '$spname':$!\n";
+	while ( <$sf> ) {
+		next if /^$/;
+		next if /^\s*#/;
+		if ( /^\s*((?:\w|\')+)\W+/ ) {
+			$misspelled_words{$1} = 1;
+			$added++;
+		}
+	}
+	close $sf or die "could not close '$spname':$!\n";
+	print "added misspellings: $added\n" if $verbose;
+}
+
+# list of common spellingwords
+sub init_spellingerrors {
+	print "initializing spellingerrors\n" if $verbose;
+	for my $word (qw/ &nbps; aan abel abismal abjectely ablve abondan abotu abour abouy abscence absense
+		absolue absolut absolutelly absolutly absoulte abuttes accelleration acceptible acces accesable
+		accesed accesing accessable accidentaly accidently acclerate acclerating accomadate accomodate
+		accoring accound accpeted accroding accross accuarate acculate acess achitecture achive
+		acknowledgent acquisions acse actal actaully activly actuall actualy actyually acutally adavnce
+		adddress adde addesses addiotional additionnal additonal additonally addres addreses addressess
+		addresss addtions adecuate adhear adhearance adherance adiministration adjustement administator
+		adminstrator adminstrators admited adress adressed adresses advence adventerous advertisment
+		advetise advetised adviasory advices aer afterall afternoont agai agains ageing aggree
+		aggregatable aggresive aggresively agian agregate agregation agressive agressively agrivating
+		agument ahold ahte ahve akses aksually alaram albel albels alergic algoritm alignement allign
+		alligned allmost alloacted allos allready allright allthough allways alot alreday alredy alright
+		altenrative althought althougn altough amasing amke ammend ammount amn amybe analasys analyizing
+		ancestory ande anderstand andthe ane anf annonymous annotatation annotatations annoucement
+		annoucing announcment annoyting anonnyed anonymus anormalous ansamble answeres antiq anual anyay
+		anyhitng anyhoo anymore anyonw anyore anythign anyways anywere aobut apac apllay apllication
+		apparant apparantly apparentely apparentry apparnetly appart appartment appearence appearred
+		appendencies apperantly appercaite appers appicable appleances appleis appliabce applicatin
+		applieds applogize appraently appriciate appriciated appropiate approprate apreciate apreciated
+		apropriate aproval aptch aqueue arbitary arbitrafy arbritrary archiecture architectual arent
+		arguements arguemnt aritmetic aritmetics arledy arond aroudn aroung arrisen arround arrray
+		artikels aslo asoc asparin assigenments assocation assoicated assotiations assumtion aswers
+		asychronous asynchonously asynchroneous atack athalon athe athentication athough atleast atrget
+		atribute attachements attatude attemps attemts atuomatic atuomatically augus autentication
+		autheinticating authenticatication authention authetnication authoratative authorative authorty
+		automaticall automaticaly automaticly autonimous avaiable avaialble avaible availabe availabel
+		availablity availbility availible availiblity avaliable avalibale avalible avilable aweful
+		awhile awlso awsome axatly axcuse bannana bartition basec basicly basse bateria baybe beachmark
+		beacuse beated becasue becease beceause becuase becuse beeing beffer beggining begining beginnig
+		behaiver behauvier behvaiour beign beleive belive belived benefitial benfit benifit beoken
+		beowser ber berak bercause berkley beseuse besure beter bettr beurocratic beween beyonf bgack
+		bgiger bheve bikesheding bince bineary birght birt blatently bloatwed bloging bnechmark boostrap
+		boostrapping bootabe bootleneck bootlenecks bootsrap boradband bordism borken borre borred
+		borring boting bottem bottonm boundries boundry boxd bradband branche briner bringign brocessor
+		broked brokeness broser brower browesable browseable browswer btit buch bugzills buidl buildling
+		buildt buile buillt buld bulding bulds bultin burried bycicle bysect bysected byt cacheing
+		calatog calcualted cale calender calles caluclate caluclated camllia campatibility cange cannnot
+		cannonical cant capabilites capabilties capabiltiy capabily capitzliation captial captialism
+		caracteristics casse casues catagory catched cathegory ceep ceratin ceratinly cerificate
+		certaintly certian certifcate certifcates certificat certifictate certiin certiinly chace
+		chacing chaged challange challanging chane chang changable changess changs chaning chanse
+		charakteristic charakteristics cheapter chech checkng checksuming chek chekc cheked cheking
+		chhosing chian chipest choise choosed choosen choses chronologocal chunck chuncking cince
+		cirruption claimst clal clarifynig classifcation cleand cleandepened clearification clearl clen
+		cliens cluter cmmit cmopile cmopiles cmplain cmplaining cna cnanot cnditions cobsidered
+		cofiguration colision colisions colom comands comapred combersome comemnts comiling comit
+		comiters comitted comitter comlplex commandline commen commenly commer commerical commericial
+		comming commited commiter commiters commiting committment committs commnad commnads commnand
+		commnications communciation communciations comooil comooiled compability comparision
+		comparisions compatability compatabilty compatablity compatiable compatibilty compatiblity
+		compentens compiel compilcated compilling compiltaion complaing complainig comples complet
+		completly completness complie componet componetn compontens comprimise compromiseable
+		comptemporary comsume comsumed comsumption comunication comunity concatanated concensus
+		conctacted conect conected conection conerter conerters configrable configration configuation
+		configuraiton configurate confimation confiuration confiused confugure confussion congraturation
+		congraturations conitinue conjob conjuction connecion connecs connecter connecters connectin
+		connenctions connet conneting connnects conntact conntect conpact conputer conreoller consensu
+		consept consequtive conservatie considerd consistant consistentency consitute conslusion
+		construcgtor consuption contai containg contect conteins contens continously continu continus
+		contiune contol contrained contribuition contributer contributers controled controler controll
+		conujunction conut conuter conuters conveinently convelient conveniece convertion convesation
+		convienient convinience coordinatory coorparative copiedd copmiler copmilers coppied corectly
+		correced correctely correcture correleate corresponsding corrsponding cosnole costantly couldnt
+		cound cource courious courve coyping crach craching crahs crahsed crasch crasching crassing
+		crasy crazyness creapage creapt creat creatopm credentail credentails creeate crnuch crnuching
+		csvup cuase curcuit currenly currentlu currnetly currrently curser customaril custommer
+		custommers cuttoff cuty cvould cvs2vn damange damanged datas dayt dbout deactive deaemon
+		deaemons deafult dealocates deamon deamons deault debuf debuging decendant decentant decicission
+		decidely decission declerations decliens decompresssion decribed decriptor ded defalt defaut
+		defautl deffirent definate definately definiately definitiely definitly definitons defintion
+		degradate degugging dehaviour deicde deine deines deivce dekstop delcared delending deley
+		deliever delievers dellicious delste demnstrate depcreation depdendency depedancy depedencies
+		depedency depeding depednent depencdny dependacies dependancies dependancy dependancys dependant
+		dependding dependeancy dependeant dependecies dependecy dependend dependendencies dependiences
+		dependiency dependig depenesis deploies deprechated deprectated depricated derivats derrivates
+		desapointed desaster desasters descendand descendents desciptors descirption descrete describd
+		descrpition descrption desease deseases desing desireable desperatly despert desprate
+		destinatino destine destory detatched detec detecing detemine deterined devdeloper deveation
+		deveices develoeprs developement developeminet developped developper developpers developre
+		developvers devestate devestating devide devided devies devinces devisions devives devleop devot
+		diablog dictaded dictonary did'n didicated didnt didsk didunt dieing diferent diffence
+		differenciate differencies differenlty differents differnce differnces differnece differnetiates
+		differnt diffrent diffrently diffsof dificult dificulty diging dilema diliver dilligence dind't
+		dindt diphthongs dircet dirctory directorys diretly diretories diretory dirft dirver diry disabe
+		disappered disasterous disclamier discourraged discoverd discuessed dismouted dispair dispalay
+		dispaly dissable dissabled dissapeared dissapointment dissillusioned distain distiguish distord
+		distorded distribition distribitions distribtue distributted distribvution distrubute
+		distrubuted dnow docuentary documantation documenation documentaiton documentatino
+		documentiation documention documetation documtns doen't doesen doesent doesnot doesnt doest
+		domainmame domani donatiosn donde donn't donot dont donw dor dotally doues droped droping
+		drustrating ducplications duplictiy duratoin duratoins durign durning durring dwsktop dynaic ean
+		eanble earler easely eather ebeen ecah eceived ecourage ecouraged ect ecurrent effecive effetive
+		effetively efficancy efficency efficent efficently effor efford eficciently efter ehere elememt
+		elipsis elliminates emaling embaress embaressing eme emial emporer enabe enbale enchanced
+		enclousure enconter encrypion encyrpt encyrpted ende endianess endoresed endtdate enior
+		enivorement enoountering enought enourmous enow enscrambled ensute enteries enterprse
+		enthusiatic entierly entites enviorement enviornment enviornmental envirionment enviroment
+		enviroments environement environnement equipted equivalen equivilent erebuild erlier erliere
+		errore errorneusly erros escolated esier esiest esle esome essense estracting ethenret etherenet
+		ething ethings etnry evenning eventaul eventaully eventhough everthing everythign everytime
+		everyting evet eveyr evne evreyone ewhich exagerate examble exapnd excactly excat exceedes
+		excelent excellant excercize excersise excert excesive exclusivly execept execption execptions
+		exectable exectables exectuable execuation exellent exemple exemtion exeption exercice exibits
+		exisiting exisitng existance existsing exmaple expalin expecially experied experince expession
+		expiremental expirience expirt explaination explainations explaned explans explantation
+		explatnation explicitely exponentionally exquse exsits exstra extemely exteneded extenstions
+		extentensible extention extentions extranious extreemly extremly facilites facter faield failded
+		faile failes failur faimiliar faliure falsh familar farwarding fase faught feasable febuary
+		fecth feebsd feelt fgights fianlly fids fiel fiels fien fienw figureing fileame filewall filks
+		filname finaly firmwares firmwrae fisrt fitler fixe fixen fixztion flages flasg flexable focuss
+		folkz folllowed follwo follwoing follwong folow folowed folowing fomr forbiden forcable forece
+		foreignphrse forgoten formate formated formost fornated forsee forthermore forusers fot foto
+		fotos foudn foward fowarding fractoinal fraemwork fragemented fragmentated fragmentatio
+		frameowkr fransisco frebsd freedback freeed freezed freind frequence freze frezze frome fthernet
+		fucntion fuction fulfil funcational funcition functionmames functionnality functoin functuion
+		funtion furhter furthur fush futher futur fysical gaint garanties gatherd gauging gaurd geeting
+		generaly generat genertaes geniue geograhically gernal gernerates gettign ghostscrip giove
+		givent glas gnerated gnoime godo gohostscrip goiung gonna gonne goot gotta grafic grammer grap
+		grapics gratefull grately graub greaet greate greatful greatfully greif grpahs gruop gthe guage
+		guarateed guarentee guarenteed guarentees guarranteed guidence gurantees hackyness hade haed hai
+		haing halp hanbook handeling hapen hapilly happend happended happends happing happpens hardisk
+		hardwares hardwrae harmpless harrass harrassment harsch hashs hatered hav havent havfe havn't
+		headup healt heavly heirarchy hellon helpfuk helpfull hep hereon hessitate hessitation
+		hexadecimals hexidecimal hibarnate hibarnating hiearchy hierachy hierarchial hierarhy higest
+		hight higly hinderences hiuge hobbiest hodling homours honets honnest honnestly honnor honnorr
+		honnorred honnors honst hookled hopful hopfully horiztonal horiztonally hounderd hounderds
+		howeber howevrr hsotname hsotnames htat hte hter htere hthe htink htis hunderts hypens
+		hypervisior hypocracy ibn idee identially identifer identifers identifiy identiy idff
+		idosyncracies iea ifhghting im imagen imagening imatating imbeded imeplementation immanent
+		immediatly immenent immidiatly immitating impariment impedence impelment implemenation
+		implementaitons implementating implementng implemetation implemetn implentor implicitely
+		implicits impliment implimentation implmentation imporant imporvement imposable imposible
+		improbe improove improoved improvments imprted inacativity inaccesible inadvertant inadvertantly
+		incase incedent incldue incluseion incomming incompeents incomptaible inconsistancy inconsitent
+		inconvienent incopatible incrase incrimental incrment incrmental indefinately indefinitly
+		indended indendently indentical indentifier indentifiers indention indentions indepedently
+		independant independantly independendly independet indepth indestrcteble indiate indiciations
+		indicies indivual indivudual indstalled inetersting infact infavour infomation informations
+		informatoin infrastcture infrasture infromation inherity inital initalise initalization
+		initalize initalized initiatior initiliased initilize inititialization inport inpossible inpunt
+		inputed inquiery insall insatll insatlled insensivite instace instal instalation instaled
+		instaler installad installaed installaing installatio installtion installtions instanciation
+		insted insteresting instractions instructuions instuctions intall intallation integerate
+		integreated integrituy intendend intepretation interal interations interchangable interchangably
+		interconverts interes interesitng interesst interessting intereting interfactive interfer
+		interferring intergrated interist interisting intermal intermittant intermittantly internaly
+		internat interneal interogate interpretedt interpretted interpretter interpretting interressing
+		interrest interresting interrestingly interrim interrups intersting interupt intial
+		intialization intialize intolerate intregate intrest intresting introduceing intruction
+		invarients invicible invole involes involvemnt invoplved invovle irt isnt isntall isoltation
+		isonly issueing ist istead isuus isystem ita iteinerant itelf ith itnel itseld ive iwll jailes
+		joing jornal jounal jsut juged juste kenrel kerel kerenel kerenels kerenl kerle kernal kernell
+		kernl keybaord killled kno knowlegde knowlege knowlodgeable knwo kust kwyrod labes lable lables
+		laeyer lagacy lanaguage langage languge laods larged lastest laterly latley latre laught
+		laughted layed layput lazyness leasure leat leav legitimite lemme lenght leson leter lettesrs
+		lexicographal lgertimately libararies libary librairies libraray libraris libraru licencing
+		licene liek lien liesure lightnig ligned liinux likeing likly liks limtations lineair linerly
+		ling liniarly lised lisens listet listning lite literrally littel litteral litterally liviness
+		llow lniux loadeded loally locak localy loccked locically loder loged loggoued loggs loging
+		loink lok loke lokking loks looh lookig lookking looksy loopack loosing loosly losseless lpatop
+		lpdng lter ltieral mabe maby mabye macademia machien machiens machin machince machinew maching
+		machne macrow macrows maek mahually mailling maintainace maintainance maintaince maintanance
+		maintaned maintanence maintenable maintence maintened maintener mames manageement managemnet
+		managent managment mananged manangement manaul manditory mangagement manged mangment manpage
+		manpages manuallying manualy manuell manufactring manyally marcro marcros markkup maschine maske
+		mater mathced maun maxaximum maximium maximun mdorn meaninful meantine measusre mechanim
+		mechanims mechiansm mechnism mechnisms memeber memery memroy ment mentined mentionned menue meny
+		mergeing mericracy meriticracy merrits mes messege messgae messgaes metada methode mfcd
+		micrcontroller microbnechmark mininum minmum minumum minut minuts miror mis miscelleneous
+		miscellenious mising misprediced missign missinc missking misspeling missplelling misterious
+		mistery mistypted misunterstood mkaes mke moble modifing modifiy modifiyng modiying momment
+		monalithic moniter monolitic mont montherboard montor montoring monut monuted mooved moter
+		motercycle motercycles motiviation moudels mountign mpre mssing multile multipled multipy
+		mutiple mutualy mvoed mysefl myst myt namming natioal natsy ncessary ncie nderstand necassary
+		neccasary neccesary neccesery neccessary necesary necessairely necessarely needto neet neetwork
+		neglegt negociate negociated neightbor nemisis nescessarily nescessary nessesery nimber nintees
+		nobady noet noice noipe nomally nonexistant noone normanlly notaions notavailable notefection
+		nothern nothin noticable notied notofocations notquite nouvou numberic numer numner nusance
+		nutrual obejct obfascated objejcts obselete obsolote obsticles obvoius ocassionaly occassion
+		occassionally occassions occation occations occurance occured occurence occurences occuried
+		occuring ocure oether ofcourse offenseive offical ofr oftem okey om ommisions ommit ommited
+		ommitt ommitted omre omrning onfigured ongoin onl onle onlne onlt onsult onthe ontop onts onw
+		ony oparation operationg opertunity opion opperation oppertunity oppinion oppions oppisite
+		oprations oprion oprions optial optiion optionsal optoin ordenary orginal orginally originaes
+		origine orignal ot otehr otsuts ouf ouput ouputing outher outout outstaning outtage overhall
+		overidden overlaping overlayed overrided overriden overritten overwritting ovre owkr pacakge
+		pacakges pachae packge packges padd padds paert painfull panices parallell paramenter parametr
+		parametrs paramtere paramters paranthesis paremeter parenticies parhaps parition paritioning
+		paritions parntheses parrallel parrellel partameters partialy particualar particulary partion
+		partions partionting partiton partitoning partitons passprhase passtrough passwrd pasto patche
+		patchex pathalogical pathces pathes peaople peform peformance peformed peice peices pengiun
+		peopel pepetual pepetually perfecly perfom perfomance perfoms perfor perfored performace
+		performancing performence performend perhas periperal peripherial peripherials permanant
+		permantly peroid persisent persistant personnal personnally personnaly persoon pertubation
+		peticular pevious pfew pgk phabriator pheraps phisical phoneix phorase phyiscall physcal physial
+		physicaly piblic pitty placte plaing plateform platfrom platorms pleae plin plisss poatch poblem
+		poblematic poeple pofessional poinitng poirts poitn poitner politley poluting polution pople
+		popularuity pordriere porevious porject porrtability porst portes portupgrde posible positiv
+		positve possability possbile posseses possibillity possilbe possition postion postitions postive
+		postress poting potr potupgrade poud poudirere poudrier poudrierre pourdiere pourdriere
+		pouridere poweful powerfull poyrts prameter pratcice preatty preblem preceed preceeded
+		preceeding preceeds precice precidence predictibly preemtive prefere prefered prefering
+		preferrable preferrably preffer preffered prefferred preform preformance premissions
+		preoblematic prepair prepairing preperation preperations preprend preprietary preprocesor
+		presense presidence presonally presumeably prety pretyt preume prevelent previos previouse
+		previousely previus prevoius pricipal primative primatives princial principes priorisation
+		priotity prirority pritn pritnf pritnfs privelege priveleged priviledge priviledges privilige
+		privledged privleges probabilly probabyl probaly probbaly probblem probem problaly proble
+		problen problme problmes probobly proccess proccesses proceedure proces proceses procols
+		proctect proepr proeprly profesional profesionals proffesional profie profilier profissional
+		progam progams progess programable programatic programlistning programm programms progrtam
+		projcet projecte prolematic prolonges promiscous promiscuos promisive promissed promissing
+		prompot promt proove propaged proped propegation propigate propogate propogation propolsal
+		proporion proporty propper propreitary propreitery propsing prorammer prorgram prosessor prot
+		protcol protcols protec prots provde provent provice providre pseuuedo pshycial pssword psuedo
+		ptach ptiner pudate puncing puroses pursache pursached puting qeustion quandries quard quater
+		quaterly queestion querys quesston questionr questoin questsions queueing qui quickier quiety
+		quirck quire quitted quoteas rabase rabased rabmling rae rans rapidely rase rasing raspberri
+		rater reactoin readd readning realated realloacted realy realyl reaosn reasoably reasonnable
+		reassambled reate reboote rebove rebuilded rebuitling rebult reccomended receieve recevied
+		recieve recieved recinded recive recoide recomend recomendation recomended recommand recommanded
+		recommanding recommened recommented reconigize recrusively redable redering rediculous
+		redundantcy reeated reelvent reember refered referes refering refernce refernces refernece
+		refferance refreind refridgerator refulat regardes regened regularely regularlly regulat reguls
+		reivew reized relaly relase relases relavent releated relese relesed relevent reloation
+		reloations relply rember remdial remebered remebers rememver remmeber remobal remvoe remvoed
+		rendtion repare reparing repative repetion repitition repititions replaceing replacemnet
+		replases replce repleaced reponding reponse reponses reponsible reposotory repostory
+		reprecussion reprecussions reproducable reproducibily reproductible reprository repy requiment
+		requireing requiretd requirments requistes requred rerurn resampeling resaonnable resemblence
+		resently resetart resetted resiilver resilliancy resillience resilliency resillient resise
+		resistnace resitor resitors resivoir reslove resloving resolf resonable resonably resons resouce
+		respecitively responce respository respresentation resseler ressources restaring restartet
+		restaurnat restaurnats resuce resuerrect resuerrecting resurections resusccitate rethnik retnia
+		retreive retrive returs reuild revalent reveiw reversse revison revisons rewcursion rewite
+		rewriten rezervation riddens rigth riht rmeoval rmore rmove roken roling rott roughy rreally
+		rreplace rrquest rudamentary runing runinig runnig runnign runnnig runnning ruote ruter sacn
+		saerch safed sahred saif saior sais salavge satsify saturage scenartio sched scheduld
+		schedulling scritp scrubing scrupt seached secction secend secion secions secondes secttion
+		secturity secund securiy seemless seemlessly seens seether senarios sence sendt sepaking
+		separatly separe separtely sepcial sepcific sepcifies sepcify seperate seperated seperately
+		seperates seperating seperation seperator seprate sequencially serching sercurity serie
+		seriosuly serius serivce serveral servicability servise sesion setable setiing seting setings
+		settt sevice sexond sey shae shaer shaers sheding shepard shepards shephard shepharding shooping
+		shoping shoud shoudl shoudn't shoulld shrinked shuld shure shuting shyed siginificant
+		significnat signle siilar sile sime similat simillar simpel simpl simplfied simplier simpliifed
+		simplyfies simular simultanious simultaniously singel singeling singels singnificant sinificant
+		sinse sintax sistems sitll skiped sligh slighly slove sloved slpw slue smaler smebody smeone
+		snapshoted snoflake snopped soe soehow soemone soemones soemthing soething softaware softner
+		softwae sofware sohuld soif soley solition solusion someoene somes somethign somethng sometime
+		someting sometjhing someway somoene somthing somwhere sonud sonuds soo soruce sparce spearator
+		specfic specifes specifi specifiaction specificially specificly specifig specifing specifiy
+		specifiying specifyed spectacte speficy sperate spesific spindels spititng splic spliting
+		splitted spose spreadth srews srtuff srync ssorted sspares ssytem stabalization stadnard
+		stairing standart standerd stantdard startet starup staticlly statuc steller steping stilla
+		stiring stkicks stoll stollen stoped stoping stoppe stoppped straigh strang strangly strat
+		strategie strenght striaght stricktly strippped stroage structurees stucture stuf stystem subet
+		submited submiter submitt substaintally substition substract substraction subsytem subsytems
+		subverion succed succeded succeds succesful succesfully successfull successfuly suceeding
+		sucesfully sucess sucessful sucessfull sucessors suckser sucksers suddently sudirectories
+		suffecient sufficent suficient sugesstion sugest sugested suggesiton suggestsions suggetion
+		suggetions sugroup suject sumbit sume superceed superiour supoose suposed suposedly suppor
+		suppotr suppotred supprts supress supressed supresses suprise suprised suprising surpise
+		surpised surpressed surprice surpriced surprize surprized surronded surroudn surroudning
+		susbtitute suspec suspection sutiable swape swepped swich switche swith swithc switich
+		switiching swop syas symetrical symtom symtoms synchronisaton syncrhonous syncrhonously
+		synonomous sysem sysetm syslodg systeam systme systmes sytem sytems sytsem taged taging taht
+		tahts talkes targer tat te teamm techer techical techincally techncially teh tehre tehse tehy
+		tempaltes temperatire templaitize temporarely tenticles tere terirrlbe termal termonology
+		termperature termporary tey th tha thaat thaknk thakns thank's thankje thansk thanx thatis thats
+		thay theese thefirst themeing thems themself theoraticly theorethically ther therads therefor
+		theres therory thets theyre theyve thie thier thign thigns thingking thinke thinkg thinkw
+		thinling thirs thnak thnig thnk tho thos thouch thoug thougt thouogh threated thremal throgh
+		throtteling throug throughly throught throuhg throwed thru thrugh tht thta thudner thwo thye ti
+		tiems tihngs tihs timestatmp tinket tinketing tipycal tirck tird titeled tlak tlaking tnan
+		todays todl togehter togethe tohers tols tomake tommorow toolcain toolchian topick totaly
+		tottaly tought tougue tpage tpye traafic tradeing traditoin traditoinal tradtional trafic
+		trailling tranalation tranalations tranfer tranfered tranfers transfered transfering
+		translateion translater translaters transltion transmision traslate traslation treatement trid
+		triede triewd trigonmetric tring tripple trival trnaslate trnaslated trofy troublehsooting
+		troubleshoute troughout trow trows trpi trrue trry trubolsome truely trully tryed tryied tryign
+		tsable tsart tsill tsrarted tthe tthis tu tunning tunr turend turnt tutoriales tye tyhrow
+		typicall typicaly udnerstand udnerstandable udpate udpates uesd uisng umounted uncapable
+		unchaged unchange uncoment unconsistent undefinied undefinitely undeflowed undersatnd understadn
+		understadning understandlable understandood understaning underway undescores undesireable
+		undestand undustrialized unecessary unecrypted unfortauntely unfortenately unfortuante
+		unfortunatelly unfortunatly unfortuntelly unfrastructure unfreezed uniion uniquily unitentinally
+		unknwn unkown unlinke unmouting unnceccessary unneccessary unnecssary unprivilegded unrelevant
+		unresolveable unreversable unsubstanciated unsuccesful unsucessfully unsutiable untill untis
+		unuseable upate updaing updateing updte updtes upgade upgaded upgarde upo uppon uprade upsteam
+		upstrewams upto ur usally useable useage usedul usefull useing usesd usign ussage usse ussually
+		usully utilites utilties uttrerly vagrand varaible varanty varialbe varialbes varliable varois
+		varoius vender vengeace veresion verion verison verry versionned versionning versoin verty
+		veryify virtial virutal visable voa volenteer volenteers voltave vontinues votlage vulnability
+		waas waht wahtever wakupe wantd warant waranted wass webupage wecam wehre wek wel wer wether
+		whanever whats whcih whe whene whereever wheres whewn whhich whie whihc whilte whinning whish
+		whit whith whne wht wich wierd wiht wihtout wilde wirh wirtten wistle wistles witdh withe
+		withhin withing withme withough withouth witk witout witt wlll wnat wnats wnet wo wonderfull
+		woner wont wor worflows workint workoad workoads workstion worng worrty woth woud woudl wouldbe
+		wouldnt wouls wranty wraper wriatble writen writtend writting wroking wroute wsouse wuch
+		xontains ycould yea yeild yeilds yesm yhe youd youi youll youre yu yuo yut /) {
+		$misspelled_words{$word} = 1;
+	}
+	print "spellingerrors: ", scalar (keys %misspelled_words), " misspellings known\n" if $verbose;
+	my @spellfiles;
+	# IGORSPELLFILES environment variable is a whitespace-separated list of files
+	push (@spellfiles, split /\s/, $ENV{'IGORSPELLFILES'}) if defined($ENV{'IGORSPELLFILES'});
+	# all files found in /usr/local/etc/igor/spelling
+	push (@spellfiles, split /\s/, `ls /usr/local/etc/igor/spelling/*`) if -d '/usr/local/etc/igor/spelling';
+	for my $spellfile (@spellfiles) {
+		readspelling($spellfile);
+	}
+}
+
+sub spellingerrors {
+	my ($bname, $line, $txt) = @_;
+	return if $txt =~ /^\s*$/;
+
+	my $txtbak = $txt;
+	my @words = split /\W+/, $txt;
+	for my $currentword (@words) {
+		if ( $misspelled_words{lc($currentword)} ) {
+			$txt = highlight_word($txt, $currentword);
+		}
+	}
+	if ( $txt ne $txtbak ) {
+		showline($bname, $line, $ansi{darkmagenta}, 'spelling', $txt);
+	}
+}
+
+sub whitespace {
+	my ($bname, $line, $txt) = @_;
+	return if $txt =~ /^$/;
+
+	my $txtbak = $txt;
+	if ( $txt =~ s/^(\s+)$/$li$1$ri/ ) {
+		showline($bname, $line, $ansi{darkblue}, 'blank line with whitespace', $txt);
+	}
+	$txt = $txtbak;
+	if ( $txt =~ s/(\S+)(\s+)$/$1$li$2$ri/ ) {
+		showline($bname, $line, $ansi{darkblue}, 'trailing whitespace', $txt);
+	}
+	$txt = $txtbak;
+	if ( $txt =~ s/( +)\t+/$li$1$ri/ ) {
+		showline($bname, $line, $ansi{darkmagenta}, 'tab after space', $txt);
+	}
+}
+
+
+# global batch tests
+sub style {
+	my ($bname, $txt) = @_;
+	print "$lf$bname style check:$rf\n";
+
+	my $you = ($txt =~ s/you\b/you/gi);
+	my $your = ($txt =~ s/your/your/gi);
+	if ( $you || $your ) {
+		print "  $lh\"you\" used $you time", ($you==1 ? '':'s'), "$rh\n" if $you;
+		print "  $lh\"your\" used $your time", ($your==1 ? '':'s'), "$rh\n" if $your;
+		print "    \"You\" and \"your\" are informal and subjective.\n";
+		print "    Attempt to be formal and objective: \"the file\" rather than \"your file\".\n";
+	}
+
+	my $should = ($txt =~ s/should/should/gi);
+	if ( $should ) {
+		print "  $lh\"should\" used $should time", ($should==1 ? '':'s'), "$rh\n";
+		print "    Use \"should\" sparingly, it is feeble and suggests unsureness.\n";
+		print "    Attempt to be imperative: \"do this\" rather than \"you should do this\".\n";
+	}
+
+	my $obviously = ($txt =~ s/obviously/obviously/gi);
+	if ( $obviously ) {
+		print "  $lh\"obviously\" used $obviously time", ($obviously==1 ? '':'s'), "$rh\n";
+		print "    If it is really obvious, it does not need to be pointed out.\n";
+	}
+
+	my $needless = ($txt =~ s/needless to say/needless to say/gi);
+	if ( $needless ) {
+		print "  $lh\"needless to say\" used $needless time", ($needless==1 ? '':'s'), "$rh\n";
+		print "    If it doesn't need to be said, why say it?\n";
+	}
+
+	my $thefollowing = ($txt =~ s/the following/the following/gi);
+	my $asfollows    = ($txt =~ s/as follows/as follows/gi);
+	if ( $thefollowing || $asfollows ) {
+		print "  $lh\"the following\" used $thefollowing time", ($thefollowing==1 ? '':'s'), "$rh\n" if $thefollowing;
+		print "  $lh\"as follows\" used $asfollows time",       ($asfollows==1    ? '':'s'), "$rh\n" if $asfollows;
+		print "    If something is following, the reader can see it without being told.\n";
+	}
+
+	my $followingexample = ($txt =~ s/following example/following example/gi);
+	if ( $followingexample ) {
+		print "  $lh\"following example\" used $followingexample time", ($followingexample==1 ? '':'s'), "$rh\n";
+		print "    If an example is following, the reader can see it without being told.\n";
+	}
+
+	my $simply = ($txt =~ s/simply/simply/gi);
+	my $basically = ($txt =~ s/basically/basically/gi);
+	if ( $simply || $basically ) {
+		print "  $lh\"simply\" used $simply time", ($simply==1 ? '':'s'), "$rh\n" if $simply;
+		print "    Use \"simply\" to mean \"in a simple manner\", \"just\", or \"merely\", not the\n";
+		print "    patronizing \"details omitted because they are not simple enough for you\".\n";
+		print "  $lh\"basically\" used $basically time", ($basically==1 ? '':'s'), "$rh\n" if $basically;
+		print "    Use \"basically\" to mean \"essentially\" or \"fundamentally\", not \"only the\n";
+		print "    basics are shown because anything more will be too complicated for you\".\n";
+	}
+
+	my $the = ($txt =~ s/(?:^the|\.\s+the)\b/the/gi);
+	my $sent = ($txt =~ s/([^.]+\.\s+)/$1/gi);
+	my $percent = ($sent > 0 ? int($the/$sent*100) : 0);
+	if ( $the && ($percent > 19) ) {
+		print "  $lh\"The\" used to start a sentence $the time", ($the==1 ? '':'s'), " in $sent sentence", ($sent==1 ? '':'s'), " ($percent%)$rh\n";
+		print "    Starting too many sentences with \"the\" can be repetitive\n";
+		print "    and dull to read.\n";
+	}
+
+	my $cf = ($txt =~ s/\Wcf\./cf./gi);
+	my $eg = ($txt =~ s/e\.g\./e.g./gi);
+	my $ie = ($txt =~ s/i\.e\./i.e./gi);
+	my $nb = ($txt =~ s/n\.b\./n.b./gi);
+	if ( $cf ) {
+		print "  $lh\"cf.\" used $cf time", ($cf==1 ? '':'s'), "$rh\n";
+		print "    \"Cf.\" (Latin \"confer\") means \"${lf}compare$rf\" and is mostly used in academic\n";
+		print "    and scientific writing.  Consider replacing with the more common English\n";
+		print "    words.\n";
+	}
+	if ( $eg ) {
+		print "  $lh\"e.g.\" used $eg time", ($eg==1 ? '':'s'), "$rh\n";
+		print "    \"E.g.\" (Latin \"exempli gratia\") means \"${lf}for example$rf\" and is mostly\n";
+		print "    used in academic and scientific writing.  Consider replacing with the\n";
+		print "    more common English words.  Both forms are usually followed by a\n";
+		print "    comma for a verbal pause:  \"e.g., a b c\" or \"for example, a b c\"\n";
+	}
+	if ( $ie ) {
+		print "  $lh\"i.e.\" used $ie time", ($ie==1 ? '':'s'), "$rh\n";
+		print "    \"I.e.\" (Latin \"id est\") means \"${lf}that is$rf\" and is mostly used in academic\n";
+		print "    and scientific writing.  Consider replacing with the more common\n";
+		print "    English words.  Both forms are usually followed by a comma for\n";
+		print "    a verbal pause:  \"i.e., a b c\" or \"that is, a b c\"\n";
+	}
+	if ( $nb ) {
+		print "  $lh\"n.b.\" used $nb time", ($nb==1 ? '':'s'), "$rh\n";
+		print "    \"N.b.\" (Latin \"nota bene\") means \"${lf}note$rf\" or \"${lf}take notice${rf}\" and is mostly\n";
+		print "    used in academic and scientific writing.  Consider replacing with\n";
+		print "    the more common English words.\n";
+	}
+
+	my $inorderto = ($txt =~ s/in order to/in order to/gi);
+	if ( $inorderto ) {
+		print "  $lh\"in order to\" used $inorderto time", ($inorderto==1 ? '':'s'), "$rh\n";
+		print "    Unless \"in order to\" has some special meaning here, \"to\" is simpler.\n";
+	}
+
+	my $invoke = ($txt =~ s/invoke/invoke/gi);
+	if ( $invoke ) {
+		print "  $lh\"invoke\" used $invoke time", ($invoke==1 ? '':'s'), "$rh\n";
+		print "    Unless \"invoke\" has some special meaning in context, \"run\" is simpler.\n";
+	}
+
+	my $parenplural = ($txt =~ s/\(s\)/\(s\)/gi);
+	if ( $parenplural ) {
+		print "  $lh\"(s)\" used $parenplural time", ($parenplural==1 ? '':'s'), "$rh\n";
+		print "    Please do not form plurals this way.  It is a holdover from lazy\n";
+		print "    programming practices, is difficult to read, and almost always\n";
+		print "    unnecessary.  A plural formed with a plain \"s\" is usually correct\n";
+		print "    when speaking about numbers of one or more.\n";
+	}
+
+	# type-specific tests
+	if ( $type eq "troff" ) {
+		my $examples = ($txt =~ /\n\.\s*Sh\s+EXAMPLES/i);
+		unless ( $examples ) {
+			print "  ${lh}no \"EXAMPLES\" section found$rh\n";
+			print "    Even trivial examples can improve clarity.\n";
+			print "    Common-use examples are better yet.\n";
+		}
+	}
+}
+
+# mdoc line-by-line tests
+my @md_displays;
+sub mdoc_whitespace {
+	my ($bname, $line, $txt) = @_;
+
+	if ( $txt =~ /^\.\s*Bd\s/ ) {
+		push @md_displays, ($txt =~ /-(?:literal|unfilled)/ || 0);
+	} elsif ( $txt =~ /^\.\s*Ed\b/ ) {
+		pop @md_displays;
+	} elsif ( ! length $txt && ! grep $_, @md_displays ) {
+		showline($bname, $line, $ansi{darkblue}, "blank line", $txt);
+	}
+}
+
+sub mdoc_date {
+	my ($bname, $line, $txt) = @_;
+	return if $txt =~ /^\s*$/;
+
+	if ( $txt =~ s/^(\.\s*Dd\s+)(.*)$/$1$lh$2$rh/ ) {
+		$docdate = $2;
+		showline($bname, $line, $ansi{darkyellow}, "date not today, $today", $txt) if $docdate ne $today;
+	}
+}
+
+sub mdoc_sentence {
+	my ($bname, $line, $txt) = @_;
+	return if $txt =~ /^\s*$/;
+
+	if ( $txt =~ s/^(\w{2,}.*?[^ .]{2,}\.\s+)(A |I |\w{2,})(.*)$/$1$lh$2$3$rh/ ) {
+		showline($bname, $line, $ansi{darkcyan}, 'sentence not on new line', $txt);
+	}
+}
+
+sub init_mdoc_uniqxrefs {
+	print "initializing mdoc_uniqxrefs\n" if $verbose;
+	%seealsoxrefs = ();
+}
+
+sub mdoc_uniqxrefs {
+	my ($bname, $line, $txt) = @_;
+	return if $txt =~ /^\s*$/;
+
+	# set a flag to indicate when a .Sh SEE ALSO section is found
+	if ( $txt =~ /^\.Sh\s+(.*)/i ) {
+		$seealso = ( $1 =~ /SEE ALSO/i );
+		print "mdoc_uniqxrefs: SEE ALSO section found\n" if $verbose;
+		return;
+	}
+
+	# only check xrefs for repeats inside a SEE ALSO section
+	if ( $seealso ) {
+		# if inside a SEE ALSO section, stop looking for duplicates
+		# after non-.Xr macros.  These would probably be text sections
+		# talking about the external references, not included in the list.
+		if ( ($txt =~ /^\./) && ($txt !~ /^\.Xr/i) ) {
+			$seealso = 0;
+			return;
+		}
+
+		# allow both valid mdoc formats (.Xr umount 8 ,)
+		# and bad ones (.Xr xorg.conf(5),)
+		if ( $txt =~ /\.Xr\s+(.*)(?:\s|\()(\d{1}\w?)/i ) {
+			my $xrefname = $1;
+			my $xrefsect = $2;
+			if ( $seealsoxrefs{"$xrefname-$xrefsect"} ) {
+				$txt =~ s/($xrefname.*$xrefsect)/$lh$1$rh/g;
+				showline($bname, $line, $ansi{yellow}, "duplicate SEE ALSO reference", $txt);
+			} else {
+				$seealsoxrefs{"$xrefname-$xrefsect"} = 1;
+			}
+		}
+	}
+}
+
+sub showmacvals {
+	my ($lastmacro, $bname, $line) = @_;
+	for my $macro (@macros) {
+		last if $macro eq $lastmacro;
+		unless ( $macroval{$macro} ) {
+			showline($bname, $line, $ansi{red}, ".$lastmacro used here", "but .$macro has not been defined");
+		}
+	}
+}
+
+sub init_mdoc_structure {
+	print "initializing mdoc_structure\n" if $verbose;
+	for my $macro (@macros) {
+		$macro =~ tr/_/ /;
+		$macroval{$macro} = '';
+	}
+}
+
+sub mdoc_structure {
+	my ($bname, $line, $txt) = @_;
+	return if $txt =~ /^\s*$/;
+
+	# skip if the line starts with an mdoc macro
+	# technically, whitespace is allowed before macros
+	return unless $txt =~ /^\s*\./;
+
+	# check for required minimum macros
+	my $parm;
+	for my $macro (@macros) {
+		$parm = '';
+		$macro =~ tr/_/ /;
+		next if $macroval{$macro};
+		if ( $txt =~ /^\.\s*\Q$macro\E\s*(.*)/i ) {
+			my $parm = $1;
+			# provide a blank parameter for macros with optional parameters
+			$parm = ' ' if ($macro =~ /^Os|Sh NAME|Sh SYNOPSIS|Sh DESCRIPTION/) && (!$parm);
+			$macroval{$macro} = $parm;
+			showmacvals($macro, $bname, $line);
+			last;
+		}
+	}
+
+	# check external refs (.Xr)
+	# suggested by Glen Barber
+	return unless $txt =~ /^.Xr/;
+
+	# characters to treat as whitespace in an Xr macro
+	my $wspace = '[ (),.:]';
+	# character class for section numbers
+	# an initial number possibly followed by a letter
+	my $sect = '\d{1}[A-Za-z]?';
+
+	my $xname = '';
+	$xname = $1 if $txt =~ /^.Xr$wspace+(\S+)/;
+	my $xsection = '';
+	$xsection = $1 if $txt =~ /^.Xr$wspace+\S+$wspace+($sect)/;
+
+	if ( ! $xname ) {
+		showline($bname, $line, $ansi{yellow}, 'xref name missing', $txt);
+		return;
+	}
+
+	if ( $xname =~ /\($sect\)/ ) {
+		$txt =~ s/($xname)/$lh$1$rh/;
+		showline($bname, $line, $ansi{yellow}, 'section number in name', $txt);
+		return;
+	}
+
+	if ( $xsection && ($xsection gt "9") ) {
+		$txt =~ s/^(.Xr$wspace+\S+$wspace+)($sect)/$1$lh$2$rh/;
+		showline($bname, $line, $ansi{yellow}, 'section higher than 9', $txt);
+		# no point in checking for sections higher than 9
+		return;
+	}
+
+	if ( $opt_x ) {
+		system("$man -w $xsection $xname >/dev/null 2>&1");
+		if ( $? ) {
+			if ( $xsection ) {
+				$txt =~ s/^(.Xr$wspace+)(\S+$wspace+$sect)/$1$lh$2$rh/;
+			} else {
+				$txt =~ s/^(.Xr$wspace+)(\S+)/$1$lh$2$rh/;
+			}
+			showline($bname, $line, $ansi{darkmagenta}, 'external man page not found', $txt);
+			# not found, no point in checking if it's this one
+			return;
+		}
+	}
+
+	# is this external reference referring to itself?
+	# skip if the .Nm macro has no value
+	return if $macroval{'Nm'} ne $xname;
+	my $currsection = '';
+	if ( $macroval{'Dt'} =~ /^\S+\s+($sect)/ ) {
+		$currsection = $1;
+	}
+	return if $xsection ne $currsection;
+	if ( $xsection && $currsection ) {
+			$txt =~ s/^(.Xr$wspace+)(\S+$wspace+$sect)/$1$lh$2$rh/;
+		} else {
+			$txt =~ s/^(.Xr$wspace+)(\S+)/$1$lh$2$rh/;
+		}
+	showline($bname, $line, $ansi{darkmagenta}, 'xref refers to *this* page (use .Nm)', $txt);
+}
+
+
+# DocBook line-by-line tests
+
+sub init_doc_titles {
+	print "initializing doc_titles\n" if $verbose;
+	# build regex of words that should be lowercase in titles
+	my @lc_words = qw/ a an and at by down for from in into like near
+					   nor of off on onto or over past the to upon with /;
+	$lc_regex = '(?:' . join('|', @lc_words) . ')';
+	my @uc_words = qw/ about are how log new not set tag use
+					   one two three four five six seven eight nine /;
+	$uc_regex = '(?:' . join('|', @uc_words) . ')';
+	my @fixedcase_words = qw/ amd64 i386 iSCSI x86 /;
+	$fixedcase_regex = '(?:' . join('|', @fixedcase_words) . ')';
+
+	# build regex for ignoring DocBook tagged words in titles
+	# like <command>ls</command>
+	my @ignoretags = qw/ acronym application command filename function
+						 link literal varname replaceable systemitem tag /;
+	for my $tag (@ignoretags) {
+		$tag = "<$tag.*?>.*?<\/$tag>";
+	}
+	$ignoreregex = '<anchor.*?>|' . join('|', @ignoretags)
+}
+
+sub doc_titles {
+	my ($bname, $line, $txt) = @_;
+	return if $txt =~ /^\s*$/;
+
+	my $txtbak = $txt;
+
+	return if $ignoreblock;
+	$titleblock = 1 if $txt =~ /<title/;
+	return unless $titleblock;
+
+	print "doc_titles: '$txt'\n" if $verbose;
+
+	my @words;
+
+	# take the text from between title tags, or the
+	# whole line if a title tag is not present
+	# split the result into an array of words, keeping
+	# ignorable DocBook tags wrapped around text
+	if ( ($txt =~ /<title.*?>(.*?)(?:<\/title>|$)/)
+		 || ($txt =~ /(.*)(?:<\/title>)/) ) {
+		@words = split /($ignoreregex|\s+)/, $1;
+	} else {
+		@words = split /($ignoreregex|\s+)/, $txt;
+	}
+
+	# use AP style: capitalize words longer than three letters; see also
+	# http://www.freebsd.org/cgi/cvsweb.cgi/doc/en_US.ISO8859-1/books/handbook/linuxemu/chapter.sgml#rev1.48
+	WORD: for my $i (0..$#words) {
+		my $word = $words[$i];
+
+		print "doc_titles: analyzing '$word'\n" if $verbose;
+
+		next WORD if $word =~ /\s+/;
+		next WORD if $word =~ /$ignoreregex/;
+
+		# special case: skip the contents of some unfinished tags
+		# <title>Configuring <acronym role="Domain Name
+		#   System">DNS</acronym></title>
+		next WORD if $word =~ /(?:role)=/;
+
+		# special case: allow single lowercase "s" for plurals
+		next WORD if $word eq 's';
+
+		# special case words that should not be capitalized
+		next WORD if $word =~ /^$fixedcase_regex$/;
+
+		# first word should be capitalized
+		if ( ($txt =~ /<title/) && ($i == 0) ) {
+			if ( is_lowercase($word) ) {
+				$words[$i] = highlight_string($word);
+			}
+			# first word is special, skip other tests
+			next WORD;
+		}
+
+		# last word should be capitalized
+		if ( ($txt =~ /<\/title/) && ($i == $#words) ) {
+			if ( is_lowercase($word) ) {
+				$words[$i] = highlight_string($word);
+			}
+			# last word is special, skip other tests
+			last WORD;
+		}
+
+		# words that should be lower case
+		if ( is_uppercase($word) ) {
+			if ( $word =~ /^$lc_regex$/i ) {
+				$words[$i] = highlight_string($word);
+				next WORD;
+			}
+		}
+
+		# words that should be upper case
+		if ( is_lowercase($word) ) {
+			if ( $word !~ /^$lc_regex$/i ) {
+				if ( (length($word) > 3) ) {
+					$words[$i] = highlight_string($word);
+					next WORD;
+				}
+			}
+			if ( $word =~ /^$uc_regex$/i ) {
+				$words[$i] = highlight_string($word);
+				next WORD;
+			}
+		}
+	}
+
+	# reconstruct the now-capitalized title
+	$txt = '';
+	$txt = $1 if $txtbak =~ /^(.*<title.*?>)/;
+	$txt .= join('', @words);
+	$txt .= $1 if $txtbak =~ /(<\/title.*?>)/;
+
+	if ( $txt ne $txtbak ) {
+		print "doc_titles:\n     original='$txtbak'\n  highlighted='$txt'\n" if $verbose;
+		showline($bname, $line, $ansi{blue}, 'capitalization', $txt);
+	}
+
+	$titleblock = 0 if $txt =~ /<\/title>/;
+}
+
+sub init_doc_indentation {
+	print "initializing doc_indentation\n" if $verbose;
+	# build regex for detecting DocBook tags that begin or
+	# end an indented section
+	my @indent_tags = qw/ abstract answer appendix article articleinfo
+						  author authorgroup biblioentry bibliography
+						  biblioset blockquote book bookinfo callout
+						  calloutlist category chapter chapterinfo colophon
+						  caution contrib date day entry event example
+						  figure formalpara funcdef funcsynopsis
+						  funcprototype glossary glossdef glossdiv
+						  glossentry glossterm important imageobject
+						  imageobjectco info informaltable
+						  informalexample itemizedlist legalnotice
+						  listitem mediaobject mediaobjectco month name
+						  note orderedlist para paramdef partintro
+						  personname preface procedure qandadiv
+						  qandaentry qandaset question row screenco
+						  sect1 sect2 sect3 sect4 sect5 section
+						  seglistitem segmentedlist sidebar step
+						  stepalternatives surname table tbody tgroup
+						  thead tip title variablelist varlistentry
+						  warning year /;
+	# add VuXML tags
+	@indent_tags = (@indent_tags, qw/ affects body cvename dates
+						description discovery head html li name p range
+						references topic ul vuln vuxml /);
+	@indent_tags = (sort {length($b) <=> length($a)} @indent_tags);
+	print "indentation tags: @indent_tags\n" if $verbose;
+	$indent_regex = '(?:' . join('|', @indent_tags) . ')';
+	print "indentation regex: $indent_regex\n" if $verbose;
+	# build regex for inline tags like
+	# <filename>blah</filename>
+	my @inline_tags = qw/ a acronym application citetitle command
+						  computeroutput devicename emphasis envar
+						  errorname filename firstterm footnote function
+						  guimenu guimenuitem hostid imagedata indexterm
+						  keycap keycombo link literal makevar option
+						  optional package parameter primary quote
+						  remark replaceable secondary see seg sgmltag
+						  simpara strong structname systemitem term tt
+						  ulink uri varname /;
+	# add VuXML tags
+	@inline_tags = (@inline_tags, qw/ ge gt le lt url /);
+	@inline_tags = (sort {length($b) <=> length($a)} @inline_tags);
+	print "inline tags: @inline_tags\n" if $verbose;
+	$inline_regex = '(?:' . join('|', @inline_tags) . ')';
+	print "inline regex: $inline_regex\n" if $verbose;
+}
+
+sub doc_indentation {
+	my ($bname, $line, $currline) = @_;
+	my ($init_prev_indent, $init_curr_indent);
+	return if $currline =~ /^\s*$/;
+
+	# indents are not significant inside ignorable SGML blocks.
+	return if $ignoreblock;
+
+	return if $currline =~ /^\s*<!--.*-->\s*$/;
+
+	# \b is needed here to prevent <parameter> being detected as <para>
+	return unless $prevnonblank =~ /<\/*$indent_regex\b.*?>/;
+
+	my $prev_indent = length(leading_space($prevnonblank));
+	my $curr_indent = length(leading_space($currline));
+	if ( $verbose ) {
+		# save initial values for later verbose reporting
+		$init_prev_indent = $prev_indent;
+		$init_curr_indent = $curr_indent;
+	}
+
+	# indent once for open tag on previous line
+	$prev_indent += 2 if $prevnonblank =~ /<$indent_regex\b/;
+
+	# allow for inline tag indenting, like
+	# <link
+	#   url=
+	# or
+	# <makevar>xyz
+	#   abc</makevar>
+	my $count = 0;
+	$count += ($prevnonblank =~ s/(<$inline_regex)\b/$1/g);
+	$count -= ($prevnonblank =~ s/(<\/$inline_regex)\b/$1/g);
+	$prev_indent += (2 * $count);
+
+	# if previous line ends in an open xref, indent
+	$prev_indent += 2 if ($prevnonblank =~ /<xref\s*$/);
+
+	# <xref> has no close tag, but uses "linkend=" the same as <link>
+	# which *does* have a close tag... so if there's a linkend= on
+	# previous line but no </ulink> or </link> on either previous
+	# or current lines, assume it's an xref and outdent
+	my $broken_regex = '(?:(?:linkend|url)=)';
+	if ( $prevnonblank =~ /^\s*$broken_regex/ ) {
+		if ($prevnonblank !~ /<\/(?:link|ulink)/) {
+			if ($currline !~ /<\/(?:link|ulink)/) {
+				$prev_indent -= 2;
+			}
+		}
+	}
+
+	# outdent for close tag at end of previous line
+	$prev_indent -= 2 if ($prevnonblank =~ /\S+.*<\/$indent_regex>\s*$/);
+
+	# outdent for close tag at the start of this line
+	$prev_indent -= 2 if ($currline =~ /^\s*<\/$indent_regex/);
+
+	# outdent after footnote
+	$prev_indent -=2 if $prevnonblank =~ /<\/para><\/footnote>/;
+
+	# singleton tags like <entry/> are really just an empty
+	# open/close tag, <entry></entry>, allow for them
+	$prev_indent -=2 if $prevnonblank =~ /\/>$/;
+
+	# close tags after long sections of nonindented blocks,
+	# like the end of a programlisting, cannot be correctly
+	# checked for indentation in this hacky way, so ignore them
+	if ( ($prevnonblank =~ /$ignoreblockstart|$ignoreblockend/)
+		|| ($currline =~ /$ignoreblockend/) ) {
+		$curr_indent = $prev_indent;
+	}
+
+	if ( $curr_indent != $prev_indent ) {
+		if ( $verbose ) {
+			print "doc_indentation:\n";
+			my $vprev = showwhitespace($prevnonblank);
+			my $vcurr = showwhitespace($currline);
+			print "previous nonblank line: '$vprev\'\n";
+			print "          current line: '$vcurr\'\n";
+			print "\t\t\t\tinitial\tfinal\n";
+			print "previous nonblank indent:\t$init_prev_indent\t$prev_indent\n";
+			print "          current indent:\t$init_curr_indent\t$curr_indent\n";
+		}
+		my $out = $origline;
+		$out =~ s/(^\s+)/$li$1$ri/;
+		showline($bname, $line, $ansi{darkred}, 'bad tag indent', $out);
+	}
+}
+
+# split and return leading space and content
+sub splitleading {
+	my $txt = shift;
+	my $inspace = '';
+	my $content = $txt;
+	if ( $txt =~ /^(\s*)(.*)/ ) {
+		$inspace = $1 if $1;
+		$content = $2 if $2;
+	}
+	return ($inspace, $content);
+}
+
+sub doc_longlines {
+	my ($bname, $line, $txt) = @_;
+	return if $txt =~ /^\s*$/;
+	return if $ignoreblock;
+	# if line is longer than $linelensgml (normally 70) chars
+	# and the part after the indent has spaces
+	# this should be smarter, like seeing if the part before the space
+	# will benefit from wrapping
+
+	# ignore long lines with these tags
+	return if $txt =~ /<(?:!DOCTYPE|!ENTITY|pubdate|releaseinfo)/;
+
+	$txt = expand_tabs($txt);
+
+	if ( length($txt) > $linelensgml ) {
+		my ($inspace, $content) = splitleading($txt);
+		my $currline = substr($content, 0, $linelensgml - length($inspace));
+		my $nextline = substr($content, length($currline));
+		if ( $currline =~ / / ) {
+			$currline =~ s/^(.*)? (.*)$/$1$li $ri$2/;
+			showline($bname, $line, $ansi{green}, 'wrap long line', "$inspace$currline$nextline");
+		} elsif ( $nextline =~ s/ /$li $ri/ ) {
+			showline($bname, $line, $ansi{green}, 'wrap long line', "$inspace$currline$nextline");
+		}
+	}
+}
+
+sub init_doc_sentence {
+	print "initializing doc_sentence\n" if $verbose;
+	# end of sentence characters: literal dot, question mark, exclamation point
+	$eos_regex = '\.|\?\!';
+}
+
+sub doc_sentence {
+	my ($bname, $line, $txt) = @_;
+
+	return if $txt =~ /^\s*$/;
+	return if $ignoreblock;
+
+	# skip if there is no end-of-sentence character
+	return unless $txt =~ /(?:$eos_regex)/;
+
+	my $errcount = 0;
+	my ($inspace, $content) = splitleading($txt);
+	my @sentences = grep (! /^$/, split /((?:.*?(?:$eos_regex)+\s+)|(?:<.*?>))/, $content);
+
+	for my $s (@sentences) {
+		# skip unless it has a one-space possible sentence start
+		next unless $s =~ /\. $/;
+
+		# SGML markup, like "<emphasis>bold</emphasis>."
+		#next if $s =~ />\. $/;
+
+		# single dots, like from "find . -name '*.sgml'"
+		next if $s =~ / \. $/;
+
+		# initials
+		next if $s =~ /[A-Z]{1}\. $/;
+
+		# common abbreviations
+		next if $s =~ /(?:Ave|Dr|Ed|etc|Inc|Jr|Mass|Pub|Sp|St|Str|str|o\.o)\. $/;
+
+		# ignore misuse of cf., e.g., i.e., and v.s., they are not
+		# end of sentence errors
+		next if $s =~ /(?:cf|e(?:\.)*g|i\.e|v\.s)\. $/i;
+
+		# months
+		next if $s =~ /(?:Jan|Feb|Mar|Apr|May|Jul|Aug|Sep|Oct|Nov|Dec)\. $/;
+
+		# numbers, like "... and 1997."
+		next if $s =~ /\d+\. $/;
+
+		# ellipsis
+		next if $s =~ /\.\.\. $/;
+
+		# it must be a single-space sentence start
+		$s =~ s/ $/$li $ri/;
+		$errcount++;
+	}
+
+	if ( $errcount ) {
+		# reassemble the now-highlighted string
+		$txt = $inspace . join('', @sentences);
+		showline($bname, $line, $ansi{darkblue}, 'use two spaces at sentence start', $txt);
+	}
+}
+
+sub init_doc_openclose {
+	print "initializing doc_openclose\n" if $verbose;
+	@openclose_tags = qw/ callout entry filename footnote li listitem literal p para row step /;
+	for my $tag (@openclose_tags) {
+		$opentag{$tag} = 0;
+	}
+	$openclose_regex = join('|', @openclose_tags);
+	my @list_tags = qw/ itemizedlist orderedlist variablelist /;
+	$list_regex = join('|', @list_tags);
+	my @parawrap_tags = qw/ footnote listitem /;
+	$parawrap_regex = join('|', @parawrap_tags);
+}
+
+sub doc_openclose {
+	my ($bname, $line, $txt) = @_;
+	return if $txt =~ /^\s*$/;
+	return if $ignoreblock;
+	return unless $txt =~ /</;
+
+	my $errcount = 0;
+	my ($inspace, $content) = splitleading($txt);
+	my @chunks = split(/(<.*?(?:>|$))/, $content);
+	@chunks = grep (! /^\s*$/, @chunks);
+
+	for my $chunk (@chunks) {
+		next unless $chunk =~ /</;
+
+		for my $tag (@openclose_tags) {
+			next unless $chunk =~ /(?:$openclose_regex)/;
+			if ( $chunk =~ /$tag/ ) {
+				# check for open without close
+				if ( $opentag{$tag} && $chunk =~ /<$tag\b/ ) {
+					$chunk =~ s/(<$tag\b)/$lh$1$rh/;
+					showline($bname, $line, $ansi{red}, "open <$tag> without closing", $inspace . join('', @chunks));
+				}
+
+				# check for close without open
+				if ( ! $opentag{$tag} && $chunk =~ /<\/$tag>/ ) {
+					$chunk =~ s/(<\/$tag\W)/$lh$1$rh/;
+					showline($bname, $line, $ansi{red}, "close </$tag> without opening", $inspace . join('', @chunks));
+				}
+
+				# evaluate closes
+				$opentag{$tag} = 0 if $chunk =~ /<\/$tag>/;
+				# evaluate opens
+				$opentag{$tag} = 1 if $chunk =~ /<$tag\b/;
+			}
+		}
+
+		# special-case closes
+		# <para> can be inside footnotes or lists
+		$opentag{'para'} = 0 if $chunk =~ /<(?:$parawrap_regex)\b/;
+		$opentag{'para'} = 0 if $chunk =~ /<\/(?:$list_regex)>/;
+
+		# list tags like <itemizedlist> start a new list
+		# so 'listitem' is no longer open
+		$opentag{'listitem'} = 0 if $chunk =~ /<(?:$list_regex)\b/;
+
+		# procedures can be nested, so <procedure> closes <step>
+		$opentag{'step'} = 0 if $chunk =~ /<procedure\b/;
+
+
+		# special-case opens
+		$opentag{'para'} = 1 if $chunk =~ /<\/(?:$parawrap_regex)>/;
+		$opentag{'para'} = 1 if $chunk =~ /<(?:$list_regex)\b/;
+
+		# list tags like </itemizedlist> end a list
+		# so 'listitem' is open again
+		$opentag{'listitem'} = 1 if $chunk =~ /<\/(?:$list_regex)>/;
+
+		# procedures can be nested, so </procedure> opens <step>
+		$opentag{'step'} = 1 if $chunk =~ /<\/procedure\b/;
+	}
+}
+
+sub init_literalblock_regex {
+	print "initializing literalblock_regex\n" if $verbose;
+	# used by multiple tests
+	$literalblock_regex = 'literallayout|programlisting|screen';
+}
+
+sub doc_tagstyle_whitespace {
+	my ($bname, $line, $currline) = @_;
+	return if $ignoreblock;
+
+	my $currlinebak = $currline;
+
+	# <title>
+	if ( $currline =~ s/^(\s*\S+.*?)(<title)/$1$lh$2$rh/ ) {
+		showline($bname, $line, $ansi{darkcyan}, 'put <title> on new line', $currline);
+		$currline = $currlinebak;
+	}
+
+	# <para>
+	if ( $currline =~ s/(<para>)\s*$/$1/ ) {
+		showline($bname, $line, $ansi{red}, 'start <para> content on same line', $currline);
+	}
+	if ( $currline =~ s/(<\/para>)([^< ]+)$/$1$lh$2$rh/ ) {
+		showline($bname, $line, $ansi{red}, 'character data is not allowed here', $currline);
+		$currline = $currlinebak;
+	}
+
+	# (programlisting>
+	if ( $currline =~ /<programlisting/ ) {
+		# <programlisting> should not be used as an inline tag
+		if ( $currline =~ s/(\S+\s*<programlisting.*?>)/$lh$1$rh/ ) {
+			showline($bname, $line, $ansi{red}, 'do not use <programlisting> inline in other elements', $currline);
+			$currline = $currlinebak;
+		} elsif ( ($currline =~ /\s*<programlisting/)
+			&& ($prevnonblank !~ /<\/(?:entry|formalpara|indexterm|note|para|programlisting|screen|title)>\s*$/) ) {
+			# <programlisting> allowed inside these elements
+			return if $prevnonblank =~ /<(?:example|informalexample)>/;
+			$currline =~ s/(<programlisting.*?>)/$lh$1$rh/;
+			showline($bname, $line, $ansi{red}, 'do not use <programlisting> inside other elements', $currline);
+			$currline = $currlinebak;
+		}
+	}
+
+	# elements that should be preceded by a blank line
+	if ( $prevline =~ /\S+/ ) {
+		# an open tag like <informalexample> is okay, otherwise
+		# there should be a blank line before these tags
+		if ( ($prevline !~ /<.*?>\s*$/) && ($currline =~ s/(<(?:$literalblock_regex).*?(?:>|$))/$lh$1$rh/) ) {
+			showline($bname, $line, $ansi{darkcyan}, "precede $1 with a blank line", $currline);
+			$currline = $currlinebak;
+		}
+	}
+
+	# elements that should be followed by a blank line
+	if ( $currline =~ /\S+/ ) {
+		# a close tag like </note> is okay, otherwise there
+		# should be a blank line after these tags
+		# unless they are followed by another close tag on the same line
+		# example: </literallayout></entry>
+		# if ( ($currline !~ /^\s*<\//) && ($prevline =~ /(<\/(?:$literalblock_regex|row|step|title)>)/) ) {
+		if ( ($currline !~ /^\s*<\//) && ($prevline =~ /(<\/(?:$literalblock_regex|row|step|title)>)/) && ($prevline !~ /<\/entry>$/) ) {
+			showline($bname, $line, $ansi{darkcyan}, "add blank line after $1 on previous line", "$lh$currline$rh");
+		}
+	}
+}
+
+sub init_doc_writestyle {
+	print "initializing doc_writestyle\n" if $verbose;
+	$redundantword_regex = 'command|filename|keycap|option';
+	$redundanttagword_regex = '(<\/(?:command> command|filename> file|keycap> key|option> option))\b';
+}
+
+sub doc_writestyle {
+	my ($bname, $line, $currline) = @_;
+	return if $ignoreblock;
+
+	my $currlinebak = $currline;
+
+	# test for redundant markup and words starting on the previous line
+	if ( $prevline =~ /(<\/(?:$redundantword_regex)>*\s*$)/ ) {
+		my $prevend = $1;
+		for my $word (split('|', $redundantword_regex)) {
+			next unless $prevend =~ /$word/;
+			next unless $currline =~ /^\s*>*\s*(\w+)\s*(?:\W+|$)/;
+			my $firstword = $1;
+			if ( "$prevend $firstword" =~ /$redundanttagword_regex/ ) {
+				$currline =~ s/^(\s*)($firstword)\b/$1$lh$2$rh/;
+				showline($bname, $line-1, $ansi{darkmagenta}, 'redundant markup and word', "... $lh$prevend$rh");
+				showline($bname, $line,   $ansi{darkmagenta}, 'redundant markup and word', $currline);
+				$currline = $currlinebak;
+				last;
+			}
+		}
+	}
+
+	# test for redundant markup and words on the current line
+	if ( $currline =~ /$redundantword_regex/ ) {
+		if ( $currline =~ s/$redundanttagword_regex/$lh$1$rh/ ) {
+			showline($bname, $line, $ansi{darkmagenta}, 'redundant markup and word', $currline);
+			$currline = $currlinebak;
+		}
+	}
+}
+
+sub init_doc_stragglers {
+	print "initializing doc_stragglers\n" if $verbose;
+	@straggler_tags = qw/ application command entry filename
+						  guibutton guimenu keycap link literal para
+						  title ulink uri varname /;
+}
+
+sub doc_stragglers {
+	my ($bname, $line, $txt) = @_;
+	return if $txt =~ /^\s*$/;
+
+	# check for spaces after open tags or before close tags
+	# like <title> Something</title>
+	# or <filename>/etc/rc.conf </filename>
+
+	# these tags should not have spaces or tabs around content
+	# opening tags (this will not catch link tags with attributes)
+	for my $tag (@straggler_tags) {
+		next if $tag eq 'entry';
+		if ( $txt =~ /(<$tag>\s+)/ ) {
+			print "doc_stragglers opening tags: tag='$tag', found='$1'\n" if $verbose;
+			$txt = highlight_word($txt, $1);
+			showline($bname, $line, $ansi{yellow}, "space before content", $txt);
+		}
+	}
+	# closing tags
+	for my $tag (@straggler_tags) {
+		next if $tag eq 'entry';
+		if ( $txt =~ /(\s+<\/$tag>)/ ) {
+			print "doc_stragglers closing tags: tag='$tag', found='$1'\n" if $verbose;
+			$txt = highlight_word($txt, $1);
+			showline($bname, $line, $ansi{yellow}, "space after content", $txt);
+		}
+	}
+	# special case: link tags
+	# like <link xlink:href="&url.articles.gjournal-desktop;">
+	# ignore the opening < and just key off of xlink:href
+	if ( $txt =~ /(xlink:href\S+?>)(.)/ ) {
+		my $lastchar = $2;
+		if ( $lastchar eq ' ' || $lastchar eq "\t" ) {
+			print "doc_stragglers xlink:href, found='$1$lastchar'\n" if $verbose;
+			$txt = highlight_word($txt, $1);
+			showline($bname, $line, $ansi{yellow}, "space before content", $txt);
+		}
+	}
+
+	# check for literal start tags without listing on the same line
+	my $tag;
+	if ( $txt =~ />\s*$/ ) {
+		if ( $txt =~ /<($literalblock_regex)[^<]?>$/ ) {
+			$tag = $1;
+			$txt =~ s/(<$tag[^<]?>)$/$lh$1$rh/;
+			showline($bname, $line, $ansi{yellow}, "put <$tag> listing on same line", $txt);
+			return;
+		} elsif ( $txt =~ /^\s*<\/($literalblock_regex)[^<]?>/ ) {
+			$tag = $1;
+			$txt =~ s/(<\/$tag[^<]?>)$/$lh$1$rh/;
+			showline($bname, $line, $ansi{yellow}, "straggling </$tag>", $txt);
+			return;
+		}
+	}
+
+	# the following tests are only for close tags at the start of a line
+	return unless $txt =~ /^\s*<\//;
+
+	return if $ignoreblock;
+
+	# stragglers can't be detected when coming out of an ignore block
+	return if ( $prevline =~ /$ignoreblockstart|$ignoreblockend/ );
+
+	# more special-case hackery to handle
+	#   </table>
+	# </para>
+	if ( ($prevline =~ /<\/table>\s*$/)
+		&& ($txt =~ /^\s*<\/para>\s*$/) ) {
+		return;
+	}
+
+	# even more special-case hackery to handle
+	#   <para>...</para>
+	#   <note>...</note>
+	# </entry>
+	if ( ($prevline =~ /<\/para>|<\/note>\s*$/)
+		&& ($txt =~ /^\s*<\/entry>\s*$/) ) {
+		return;
+	}
+
+	for my $tag (@straggler_tags) {
+		if ( $txt =~ /^\s*(<\/$tag>)\s*$/ ) {
+			$txt = highlight_word($txt, $1);
+			showline($bname, $line, $ansi{yellow}, "straggling </$tag>", $txt);
+		}
+	}
+}
+
+sub doc_whitespace {
+	my ($bname, $line, $txt) = @_;
+	my $txtbak = $txt;
+
+	# indents and tabs/spaces are not significant inside
+	# ignorable SGML blocks
+	return if $ignoreblock;
+
+	# multiples of eight spaces at the start a line
+	# (after zero or more tabs) should be a tab
+	if ( $txt =~ s/^(\t* {8})+/$li$1$ri/g ) {
+		showline($bname, $line, $ansi{darkmagenta}, 'use tabs instead of spaces', $txt);
+	}
+
+	# tabs hidden in paragraphs is also bad
+	$txt = $txtbak;
+	if ( $txt =~ s/^(\s*\S+)(.*)(\t)/$1$2$li$3$ri/ ) {
+		showline($bname, $line, $ansi{darkmagenta}, 'tab in content', $txt);
+	}
+
+	# if coming out of an ignoreblock, odd spaces are
+	# an artifact of splitting the line and can't be checked
+	return if ( $prevline =~ /$ignoreblockstart|$ignoreblockend/ );
+
+	# one or more occurrences of single tabs or double spaces,
+	# followed by a single space, is a bad indent
+	# if ( $txt =~ s/^((?:(?:  )+|(?:\t+))* )\b/$li$1$ri/ ) {
+
+	# but simpler just to expand tabs to 8 spaces
+	# and check for an odd number of spaces
+	$txt = $txtbak;
+	$txt = expand_tabs($txt);
+	if ( $txt =~ s/^((?:  )* )\b/$li$1$ri/ ) {
+		showline($bname, $line, $ansi{darkred}, 'bad indent', $txt);
+	}
+}
+
+
+# DocBook batch tests
+
+
+
+# remember previous line for comparison
+sub saveprevline {
+	my $pline = shift;
+	$prevline = $pline;
+	if ( $pline =~ /\S+/ ) {
+		# treat comments as blank lines
+		return if $pline =~ /\s*<!--/;
+		return if $pline =~ /-->\s*$/;
+		$prevnonblank = $pline;
+	}
+}
+
+
+initialize();
+
+if ( $opt_X ) {
+	print "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
+	print "<checkstyle version=\"7.1\">\n";
+}
+
+# main loop
+foreach my $fname (@ARGV) {
+	if ( $fname ne 'stdin' ) {
+		next if -d $fname;
+		unless ( -f $fname ) {
+			print "$fname: not found\n";
+			next;
+		}
+		unless ( -r $fname ) {
+			print "$fname: not readable\n";
+			next;
+		}
+	}
+
+	unless ( $opt_X ) {
+		print "$fname:\n" if $#ARGV > 0;
+	} else {
+		print "  <file name=\"", xmlize($fname), "\">\n";
+	}
+	$fname = writestdinfile() if $fname eq "stdin";
+
+	$bname = basename($fname);
+	$tmpfile = '';
+	$type = filetype($fname);
+
+	if ( $type =~ /gzip|bzip/ ) {
+		$tmpfile = uncompress($fname, $type);
+		$type = filetype($tmpfile);
+	}
+
+	print "detected file type:$type\n" if $verbose;
+
+	open $fh, '<', ($tmpfile ? $tmpfile : $fname) or die "cannot open '$tmpfile':$!\n";
+
+	# reset for each new document
+	init_mdoc_uniqxrefs() if $opt_g;	# mdoc see also xrefs
+	init_mdoc_structure() if $opt_m;	# mdoc tag presence
+	$ignoreblock = 0;		# ignore SGML block
+	my $saveindent = '';	# SGML indent level
+
+	# line-by-line tests
+	while (<$fh>) {
+		# limit output to one vulnerability ID
+		if ( $vid ) {
+			if ( $_ =~ /<vuln/ ) {
+				print "checking for VID in '$_'\n" if $verbose;
+				if ( $vid eq 'latest' ) {
+					$startline = $. if $_ =~ /<vuln vid=/;
+				} else {
+					$startline = $. if $_ =~ /<vuln vid=\"$vid\"/;
+				}
+				$stopline  = $. if $_ =~ /<\/vuln/;
+				print "VID: startline=$startline, stopline=$stopline\n" if $verbose;
+			}
+		}
+
+		# end if past specified ending line number
+		last if $stopline && ($. > $stopline);
+
+		chomp;
+
+		# global tests
+		abbrevs($bname, $., $_)         if $opt_a;
+		badphrases($bname, $., $_)      if $opt_b;
+		contractions($bname, $., $_)    if $opt_u;
+		freebsdobsolete($bname, $., $_) if $opt_f;
+		repeatedwords($bname, $., $_)   if $opt_r;
+		spellingerrors($bname, $., $_)  if $opt_s;
+		whitespace($bname, $., $_)      if $opt_w;
+
+		# mdoc line tests
+		if ( $type eq "troff" ) {
+			next if /^\.\\\"/;	# ignore comments for these tests
+
+			mdoc_whitespace($bname, $., $_) if $opt_p;
+			mdoc_date($bname, $., $_)       if $opt_d;
+			mdoc_sentence($bname, $., $_)   if $opt_e;
+			mdoc_uniqxrefs($bname, $., $_)  if $opt_g;
+			mdoc_structure($bname, $., $_)  if $opt_m;
+		}
+
+		# DocBook line tests
+		if ( $type =~ /sgml|xml/ ) {
+			$origline = $_;
+			doc_stragglers($bname, $., $_)          if $opt_S;
+			doc_tagstyle_whitespace($bname, $., $_) if $opt_t;
+			for my $segment (splitter($_)) {
+				if ( $segment =~ /($ignoreblockstart)/ ) {
+					# when entering an ignore block, test the full
+					# line for indentation unless it is a comment
+					unless ( $origline =~ /^\s*<!--/ ) {
+						doc_indentation($bname, $., $origline) if $opt_i;
+						# test just the indent for whitespace
+						my ($origindent, undef) = splitleading($origline);
+						doc_whitespace($bname, $., $origindent) if $opt_W;
+						$saveindent = leading_space($origline);
+						# save the same state information as the main loop would
+						saveprevline($saveindent . $1);
+						# test just the leading whitespace
+					}
+					$ignoreblock++;
+					next;
+				} elsif ( $segment =~ /($ignoreblockend)/ ) {
+					# restore the indent level at the end of an ignore block
+					$ignoreblock--;
+					$prevline = substr($saveindent,0,length($saveindent)-2) . $1;
+					next;
+				}
+				doc_titles($bname, $., $segment)      if $opt_c;
+				doc_indentation($bname, $., $segment) if $opt_i;
+				doc_longlines($bname, $., $segment)   if $opt_l;
+				doc_sentence($bname, $., $segment)    if $opt_n;
+				doc_openclose($bname, $., $segment)   if $opt_o;
+				doc_writestyle($bname, $., $segment)  if $opt_E;
+				doc_whitespace($bname, $., $segment)  if $opt_W;
+			}
+		}
+		saveprevline($_);
+	}
+
+	close $fh or die "could not close file:$!\n";
+
+	if ( $opt_d || $opt_y ) {
+		# skip batch tests if a line range is set
+		last if $opt_C;
+
+		# slurp the whole file
+		open $fh, '<', ($tmpfile ? $tmpfile : $fname) or die "cannot open '$tmpfile':$!\n";
+		my $fulltext = do { local($/); <$fh> };
+		close $fh or die "could not close file:$!\n";
+
+		# global batch tests
+		style($bname, $fulltext) if $opt_y;
+
+		# mdoc batch tests
+		if ( ($type eq "troff") && ($opt_d) && (!$docdate) ) {
+			showline($bname, '-', '.Dd date not set', '', '');
+		}
+	}
+
+	if ( $opt_X ) {
+		print "  </file>\n";
+	}
+
+	removetempfiles();
+}
+
+if ( $opt_X ) {
+	print "</checkstyle>\n";
+}
