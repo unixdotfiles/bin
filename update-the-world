@@ -102,3 +102,4 @@ stack update
 R -e 'options(warn = 0); update.packages(ask = FALSE)'
 sudo pkgin -y update
 sudo pkgin -y full-upgrade
+luarocks install --local $(luarocks list --porcelain --outdated |cut -d '	' -f 1)
