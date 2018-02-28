@@ -26,3 +26,6 @@
 [submodule "submodules/mimic"]
 	path = submodules/mimic
 	url = https://github.com/reinderien/mimic.git
+[submodule "submodules/setledsmac"]
+	path = submodules/setledsmac
+	url = git@github.com:damieng/setledsmac.git
