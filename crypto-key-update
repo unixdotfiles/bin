@@ -1,0 +1,11 @@
+#!/bin/sh
+set -x
+
+quit() {
+  exit 1
+}
+
+trap quit INT
+
+gpg2 --fetch-keys
+gpg2 --with-colons --fast-list-mode --list-sigs | awk -F ':' '$1 ~ /sig|rev/ {print $5}' | sort -u | xargs gpg --recv-keys
