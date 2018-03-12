@@ -83,6 +83,8 @@ then
   __exists emerge && __sudo -H emerge --update --deep world
 else
   __sudo -H pkg upgrade
+  for jid in $(jls jid); do __sudo pkg -j $jid upgrade -y ; done
+  for jid in $(jls jid); do __sudo pkg -j $jid autoremove ; done
 fi
 gem update --user-install
 __sudo npm -g update
