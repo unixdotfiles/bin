@@ -35,7 +35,7 @@ Firefox_latest_version() {
 }
 
 GalaxyClient_latest_version() {
-  curl -sS https://cfg.gog.com/desktop-galaxy-updater/4/preview/files-osx.json | grep version | sed -E "$_version_swap_string"
+  curl -sS https://cfg.gog.com/desktop-galaxy-updater/5/preview/files-osx.json | grep version | sed -E "$_version_swap_string"
 }
 
 OnePassword_latest_version() {
