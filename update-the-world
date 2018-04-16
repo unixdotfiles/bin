@@ -58,7 +58,7 @@ fi
 
 _pip_update() {
   pip="$1"
-  __exists "$pip" && "$pip" install --user -U $("$pip" list --format=legacy --outdated | awk '!/Could not|ignored/ {print $1}')
+  __exists "$pip" && "$pip" install --user -U $("$pip" | awk '!/Package|---/{ print $1}')
 }
 
 while true; do __sudo -v; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
