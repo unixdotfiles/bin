@@ -87,7 +87,7 @@ else
   #for jid in $(jls jid); do __sudo pkg -j $jid autoremove ; done
 fi
 gem update --user-install
-__sudo npm -g update
+npm -g update
 apm update --no-confirm
 _pip_update pip
 _pip_update pip-2.7
