@@ -1,5 +1,5 @@
 #!/bin/sh
-# sudo poudriere jail -j amd64-matches-host -b -u
+sudo poudriere jail -j amd64-matches-host -u
 sudo poudriere bulk -j amd64-matches-host -p development  \
 	ports-mgmt/pkg-devel \
 	$(pkg query '%o'|grep -vE '(pkg-devel|gcc|qemu|vde2)') "$@"
