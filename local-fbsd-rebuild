@@ -3,19 +3,24 @@ trap 'exit 1' INT
 
 flags="U"
 rebuild=1
+ports=1
 while getopts "$flags" flag
 do
   case "$flag" in
   U)  rebuild= ;;
-  ?)  printf "Usage: %s: [-%s] ...\n" "$flags" "$0"
+  P)  ports= ;;
+  ?)  printf "Usage: %s: [-%s] ...\\n" "$flags" "$0"
       exit 2;;
   esac
 done
+
+shift $((OPTIND-1))
 
 if [ -n "$rebuild" ]
 then
   sudo poudriere jail -j amd64-matches-host -u
 fi
-sudo poudriere bulk -j amd64-matches-host -p development  \
-	ports-mgmt/pkg-devel \
-	$(pkg query '%o'|grep -vE '(pkg-devel|gcc|qemu|vde2)')
+if [ -n "$ports" ]
+then
+  sudo poudriere bulk -j amd64-matches-host -p development $(pkg query '%o')
+fi
