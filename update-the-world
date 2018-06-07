@@ -23,16 +23,19 @@ __sudo() {
 
 trap quit INT
 
+config_only=
 mac=1
 selfupdate=1
 doroot=1
-while getopts MRS flag
+while getopts cMRS flag
 do
-  case "$flag" in
+  case $flag in
+  c)  config_only=1
+    ;;
   R)  doroot= ;;
   M)  mac= ;;
   S)  selfupdate= ;;
-  ?)  printf "Usage: %s: [-MRS] ...\n" "$0"
+  ?)  printf "Usage: %s: [-cMRS] ...\n" "$0"
       exit 2;;
   esac
 done
@@ -55,6 +58,11 @@ then
 fi
 
 (cd ~/bin && ./submodules/update.sh)
+
+if [ -n "$config_only"  ]
+then
+  exit 0
+fi
 
 _pip_update() {
   pip="$1"
