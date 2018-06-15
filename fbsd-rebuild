@@ -1,12 +1,14 @@
 #!/bin/sh
 trap 'exit 1' INT
 
-flags="U"
+build=
+flags="bUP"
 rebuild=1
 ports=1
 while getopts "$flags" flag
 do
   case "$flag" in
+  b)  build=1  ;;
   U)  rebuild= ;;
   P)  ports= ;;
   ?)  printf "Usage: %s: [-%s] ...\\n" "$flags" "$0"
@@ -16,12 +18,23 @@ done
 
 shift $((OPTIND-1))
 
+if [ -n "$build" ]
+then
+  (
+    cd /usr/src &&
+    svn up &&
+    make -s buildworld buildkernel -j34 KERNCONF=EADLER
+    sudo make -s installworld installkernel -j64 KERNCONF=EADLER
+  )
+fi
+
 if [ -n "$rebuild" ]
 then
   sudo poudriere jail -j amd64-matches-host -u
 fi
 if [ -n "$ports" ]
 then
+  (cd /srv/src/freebsd/ports && git pull)
   sudo poudriere bulk -j amd64-matches-host -p development $(pkg query -e '%a=0' '%o')
 fi
 sudo pkg upgrade
