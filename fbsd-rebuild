@@ -11,7 +11,7 @@ do
   b)  build=1  ;;
   U)  rebuild= ;;
   P)  ports= ;;
-  ?)  printf "Usage: %s: [-%s] ...\\n" "$flags" "$0"
+  ?)  printf "Usage: %s: [-%s] ...\\n" "$0" "$flags"
       exit 2;;
   esac
 done
