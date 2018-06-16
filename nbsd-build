@@ -22,6 +22,7 @@ objbase="/srv/obj/netbsd"
 	-V MKBSDTAR=yes \
 	-V MKCVS=no \
 	-V MKHOSTOBJ=yes \
+	-V MKGROFF=no \
 	-V MKLINT=no \
 	-V MKLLVM=no \
 	-V MKHTML=no \
