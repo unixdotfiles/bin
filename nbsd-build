@@ -16,21 +16,22 @@ set -x
 objbase="/srv/obj/netbsd"
 
 ./build.sh \
-	-uU -j33 -m amd64 -N1 \
-	-V MKATF=no \
-	-V MKCOMPAT=no \
-	-V MKBSDTAR=yes \
-	-V MKCVS=no \
-	-V MKHOSTOBJ=yes \
-	-V MKGROFF=no \
-	-V MKLINT=no \
-	-V MKLLVM=no \
-	-V MKHTML=no \
-	-V MKKDEBUG=yes \
-	-V MKKERBEROS=no \
-	-V MKLDAP=no \
-	-V MKPROFILE=no \
-	-V MKX11=no \
-	-V MKX11FONTS=no \
-	-O $objbase/odir/ -T $objbase/tdir/ -R $objbase/rdir -D $objbase/ddir \
-	build
+  -uU -j33 -m amd64 -N1 \
+  -V MKATF=no \
+  -V MKCOMPAT=no \
+  -V MKBSDTAR=yes \
+  -V MKCVS=no \
+  -V MKHOSTOBJ=yes \
+  -V MKGROFF=no \
+  -V MKLINT=no \
+  -V MKLLVM=no \
+  -V MKHTML=no \
+  -V MKKDEBUG=yes \
+  -V MKKERBEROS=no \
+  -V MKLDAP=no \
+  -V MKPROFILE=no \
+  -V MKRUMP=no \
+  -V MKX11=no \
+  -V MKX11FONTS=no \
+  -O $objbase/odir/ -T $objbase/tdir/ -R $objbase/rdir -D $objbase/ddir \
+  build
