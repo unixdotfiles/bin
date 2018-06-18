@@ -1,4 +1,36 @@
 #!/bin/sh
 
 # -fsanitize=memory,thread
-${CC:-clang} -fsanitize=alignment,bool,bounds,enum,float-cast-overflow,float-divide-by-zero,integer-divide-by-zero,nonnull-attribute,null,nullability-arg,nullability-assign,nullability-return,object-size,pointer-overflow,return,returns-nonnull-attribute,shift,signed-integer-overflow,unreachable,unsigned-integer-overflow,vla-bound,vptr,address -flto -fwhole-program-vtables -fstrict-vtable-pointers -Weverything --pedantic -fdiagnostics-show-category=name -fdiagnostics-show-template-tree -g "$@"
+${CC:-clang} \
+  -fsanitize=alignment \
+  -fsanitize=bool \
+  -fsanitize=bounds \
+  -fsanitize=enum \
+  -fsanitize=float-cast-overflow \
+  -fsanitize=float-divide-by-zero \
+  -fsanitize=integer-divide-by-zero \
+  -fsanitize=nonnull-attribute \
+  -fsanitize=null \
+  -fsanitize=nullability-arg \
+  -fsanitize=nullability-assign \
+  -fsanitize=nullability-return \
+  -fsanitize=object-size \
+  -fsanitize=pointer-overflow \
+  -fsanitize=return \
+  -fsanitize=unsigned-integer-overflow \
+  -fsanitize=returns-nonnull-attribute \
+  -fsanitize=shift \
+  -fsanitize=signed-integer-overflow \
+  -fsanitize=unreachable \
+  -fsanitize=vla-bound \
+  -fsanitize=vptr \
+  -fsanitize=address \
+  -flto \
+  -fwhole-program-vtables \
+  -fstrict-vtable-pointers \
+  -fdiagnostics-show-category=name \
+  -fdiagnostics-show-template-tree \
+  -Weverything \
+  -Wno-padded \
+  -g \
+  "$@"
