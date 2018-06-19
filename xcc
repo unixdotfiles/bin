@@ -32,5 +32,6 @@ ${CC:-clang} \
   -fdiagnostics-show-template-tree \
   -Weverything \
   -Wno-padded \
+  -Wno-missing-noreturn \
   -g \
   "$@"
