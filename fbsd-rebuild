@@ -7,7 +7,7 @@ flags="bPvU"
 build=
 ports=1
 rebuild=1
-verbose=1
+verbose=
 while getopts "$flags" flag
 do
   case "$flag" in
