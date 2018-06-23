@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 function ctrl_c() {
   stty "$saved_stty"
