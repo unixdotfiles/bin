@@ -109,7 +109,7 @@ rustup self update
 cargo search # update registry
 stack upgrade
 stack update
-R -e 'options(warn = 0); update.packages(ask = FALSE)'
+R --quiet -e 'options(warn = 0); update.packages(ask = FALSE)'
 sudo pkgin -y update
 sudo pkgin -y full-upgrade
 for lua in luarocks luarocks-5.3
