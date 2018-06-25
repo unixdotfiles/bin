@@ -33,5 +33,7 @@ ${CC:-clang} \
   -Weverything \
   -Wno-padded \
   -Wno-missing-noreturn \
+  -D_CONST_X_STRING \
+  -D_FORTIFY_SOURCE=2 \
   -g \
   "$@"
