@@ -34,5 +34,6 @@ ${CC:-clang++} \
   -Wno-padded \
   -Wno-missing-noreturn \
   -Wno-c++98-compat \
+  -Wno-c++98-compat-pedantic \
   -g \
   "$@"
