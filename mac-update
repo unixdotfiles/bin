@@ -50,6 +50,14 @@ Atom_latest_version() {
   curl -s https://api.github.com/repos/atom/atom/releases/latest | grep -m1 '"name"' | sed -E "$_version_swap_string"
 }
 
+TransmissionGUI_latest_version() {
+  curl -sS https://api.github.com/repos/transmission-remote-gui/transgui/releases/latest | grep -m1 '"tag_name"' | sed -E "$_version_swap_string"
+}
+
+Unknown() {
+  echo unknown
+}
+
 _info_print() {
   printf "%-30s\t%-30s\t%-30s\n" "$1" "$2" "$3"
 }
@@ -106,3 +114,5 @@ check_app 'GOG Galaxy' "GalaxyClient_latest_version"
 check_app '1Password 6' "OnePassword_latest_version"
 check_app 'Hex Fiend' "HexFiend_latest_version"
 check_app 'Atom' "Atom_latest_version"
+check_app 'Tunnelblick' Unknown
+check_app 'Transmission Remote GUI' TransmissionGUI_latest_version
