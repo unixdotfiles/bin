@@ -33,8 +33,8 @@ then
     sudo beadm create rebuild-pre-"$(date +%F-%H-%M-%S)" &&
     cd /usr/src &&
     svn up &&
-    make -s buildworld buildkernel -j34 KERNCONF=EADLER &&
-    sudo make -s installworld installkernel -j64 KERNCONF=EADLER &&
+    make -s buildworld buildkernel -j34 KERNCONF=EADLER KERNCONFDIR=/home/eax/.conf/freebsd/ &&
+    sudo make -s installworld installkernel -j64 KERNCONF=EADLER KERNCONFDIR=/home/eax/.conf/freebsd/ &&
     sudo make -s delete-old &&
     sudo beadm create rebuild-post-"$(date +%F-%H-%M-%S)"
   )
