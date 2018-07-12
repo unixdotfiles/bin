@@ -24,20 +24,26 @@ SANITZERS="alignment, \
   vptr, \
   address
 "
+
+WARNS="-Weverything \
+-Wno-padded \
+-Wno-missing-noreturn \
+-Wno-vla \
+-Wno-disabled-macro-expansion
+"
+
 # -fsanitize=memory,thread
 
 SANITZERS="$(printf "$SANITZERS" | tr -d ' ')"
 
 exec clang \
+  $WARNS \
   -fsanitize="$SANITZERS" \
   -flto \
   -fwhole-program-vtables \
   -fstrict-vtable-pointers \
   -fdiagnostics-show-category=name \
   -fdiagnostics-show-template-tree \
-  -Weverything \
-  -Wno-padded \
-  -Wno-missing-noreturn \
   -D_CONST_X_STRING \
   -D_FORTIFY_SOURCE=2 \
   -g \
