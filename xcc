@@ -28,7 +28,7 @@ SANITZERS="alignment, \
 
 SANITZERS="$(printf "$SANITZERS" | tr -d ' ')"
 
-${CC:-clang} \
+exec clang \
   -fsanitize="$SANITZERS" \
   -flto \
   -fwhole-program-vtables \
