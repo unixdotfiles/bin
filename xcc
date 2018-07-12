@@ -25,11 +25,10 @@ SANITZERS="alignment, \
   address
 "
 
-WARNS="-Weverything \
--Wno-padded \
--Wno-missing-noreturn \
--Wno-vla \
--Wno-disabled-macro-expansion
+WARNS="-Weverything
+-Wno-padded
+-Wno-missing-noreturn
+-Wno-vla
 "
 
 # -fsanitize=memory,thread
