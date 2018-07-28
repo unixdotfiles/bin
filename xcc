@@ -29,6 +29,7 @@ WARNS="-Weverything
 -Wno-padded
 -Wno-missing-noreturn
 -Wno-vla
+-Wno-reserved-id-macro
 "
 
 # -fsanitize=memory,thread
