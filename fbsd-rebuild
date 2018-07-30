@@ -47,6 +47,6 @@ fi
 if [ -n "$ports" ]
 then
   (cd /srv/src/freebsd/ports && git pull) || true
-  sudo poudriere bulk -j amd64-matches-host -p development $(pkg query -e '%a=0' '%o')
+  sudo poudriere bulk -j amd64-matches-host -p development $(pkg query -e '%a=0' '%o') || true
 fi
 sudo pkg upgrade
