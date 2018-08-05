@@ -1,7 +1,7 @@
 #!/usr/local/bin/zsh
 trap 'exit 1' INT
 
-set -eux
+set -u
 
 flags="bPvU"
 build=
@@ -30,6 +30,7 @@ fi
 if [ -n "$build" ]
 then
   (
+    set -e;
     sudo beadm create rebuild-pre-"$(date +%F-%H-%M-%S)" &&
     cd /usr/src &&
     ( [[ -n "$update_sources" ]] && svn up ) &&
@@ -43,7 +44,7 @@ fi
 
 if [ -n "$ports" ]
 then
-  ( cd /srv/src/freebsd/ports && [[ -n "$update_sources" ]] && git pull ) &&
+  ( cd /srv/src/freebsd/ports && [[ -n "$update_sources" ]] && git pull ) || true
   sudo poudriere bulk -j amd64-matches-host -p development $(pkg query -e '%a=0' '%o') || true
 fi
 sudo pkg upgrade
