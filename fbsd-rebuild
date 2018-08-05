@@ -6,13 +6,13 @@ set -eux
 flags="bPvU"
 build=
 ports=1
-rebuild=1
+update_sources=1
 verbose=
 while getopts "$flags" flag
 do
   case "$flag" in
   b)  build=1  ;;
-  U)  rebuild= ;;
+  U)  update_sources= ;;
   P)  ports= ;;
   v)  verbose=1  ;;
   ?)  printf "Usage: %s: [-%s] ...\\n" "$0" "$flags"
@@ -32,21 +32,18 @@ then
   (
     sudo beadm create rebuild-pre-"$(date +%F-%H-%M-%S)" &&
     cd /usr/src &&
-    svn up &&
+    ( [[ -n "$update_sources" ]] && svn up ) &&
     make -s buildworld buildkernel -j34 KERNCONF=EADLER KERNCONFDIR=/home/eax/.conf/freebsd/ &&
     sudo make -s installworld installkernel -j64 KERNCONF=EADLER KERNCONFDIR=/home/eax/.conf/freebsd/ &&
     sudo make -s delete-old &&
     sudo beadm create rebuild-post-"$(date +%F-%H-%M-%S)"
   )
-fi
-
-if [ -n "$rebuild" ]
-then
   sudo poudriere jail -j amd64-matches-host -u
 fi
+
 if [ -n "$ports" ]
 then
-  (cd /srv/src/freebsd/ports && git pull) || true
+  ( cd /srv/src/freebsd/ports && [[ -n "$update_sources" ]] && git pull ) &&
   sudo poudriere bulk -j amd64-matches-host -p development $(pkg query -e '%a=0' '%o') || true
 fi
 sudo pkg upgrade
