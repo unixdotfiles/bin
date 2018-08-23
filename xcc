@@ -30,6 +30,8 @@ WARNS="-Weverything
 -Wno-missing-noreturn
 -Wno-vla
 -Wno-reserved-id-macro
+-Wno-nullability-extension
+-Wno-c11-extensions
 "
 
 # -fsanitize=memory,thread
