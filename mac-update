@@ -58,6 +58,10 @@ TransmissionGUI_latest_version() {
   curl -sS https://api.github.com/repos/transmission-remote-gui/transgui/releases/latest | grep -m1 '"tag_name"' | sed -E "$_version_swap_string"
 }
 
+BackgroundMusic_latest_version() {
+  curl -sS https://api.github.com/repos/kyleneideck/BackgroundMusic/releases/latest | grep -m1 '"tag_name"' | sed -E "$_version_swap_string"
+}
+
 Unknown() {
   echo unknown
 }
@@ -121,3 +125,4 @@ check_app 'Atom' "Atom_latest_version"
 check_app 'Tunnelblick' Unknown
 check_app 'Transmission Remote GUI' TransmissionGUI_latest_version
 check_app 'Merlin Project' Merlin_latest_version
+check_app 'Background Music' BackgroundMusic_latest_version
