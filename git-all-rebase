@@ -2,10 +2,12 @@
 set -eux
 
 opt_all="--all"
-while getopts A flag
+fetch=true
+while getopts AF flag
 do
   case "$flag" in
   A)  opt_all="" ;; # Disable --all
+  F)  fetch="" ;;
   ?)  printf "Usage: %s: [-A] ...\n" "$0"
       exit 2;;
   esac
@@ -13,8 +15,9 @@ done
 
 shift "$((OPTIND - 1))"
 
-
-git fetch $opt_all --prune
+if [ -n "$fetch" ]; then
+  git fetch $opt_all --prune
+fi
 git checkout --detach HEAD
 git branch -f master origin/master
 git clean-branches
