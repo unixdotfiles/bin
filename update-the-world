@@ -99,7 +99,7 @@ npm -g update
 apm update --no-confirm
 _pip_update pip
 _pip_update pip-2.7
-_pip_update pip-3.6
+_pip_update pip-3.7
 #cpan -u
 vim -i NONE +PlugUpgrade +qa
 (cd ~/.conf && git commit -m "Update VimPlug config" vim/home/autoload/plug.vim && git push)
