@@ -1,0 +1,18 @@
+#!/bin/sh
+
+b="$1"
+
+if [ -z "$b" ]
+then
+  echo "$0 <commit>"
+  exit 1
+fi
+
+git checkout -b eax/br/$b origin/master;
+if git cherry-pick "$b"
+then
+  git push grimreaper;
+  EDITOR=cat hub pull-request;
+else
+  git cherry-pick --abort
+fi
