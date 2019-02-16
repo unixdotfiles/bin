@@ -74,7 +74,7 @@ if [ "$(uname -s)" = "Darwin" ]
 then
   if [ -n "$mac" ]
   then
-    printf "y\nd\n"|__sudo -H port reclaim
+    #printf "y\nd\n"|__sudo -H port reclaim
     __sudo -H port selfupdate
     port outdated
     __sudo -H port -u upgrade outdated
