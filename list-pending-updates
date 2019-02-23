@@ -1,0 +1,11 @@
+#!/bin/sh
+
+case "$(uname -s)" in
+    Darwin)
+      port livecheck 'maintainer:grimreaper'
+      ;;
+    *)
+      exit 1
+      ;;
+esac
+
