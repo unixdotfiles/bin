@@ -1,8 +1,31 @@
 #!/bin/sh
 
+trap quit INT
+
+unmaintained=""
+openmaintainer=""
+while getopts ou flag
+do
+  case $flag in
+  o)  unmaintained="yes"
+    ;;
+  u) openmaintainer="yes"
+    ;;
+  ?)  printf "Usage: %s: [-ou] ...\n" "$0"
+      exit 2;;
+  esac
+done
+
+
 case "$(uname -s)" in
     Darwin)
       port livecheck 'maintainer:grimreaper'
+      if [ -n "$unmaintained" ]; then
+        port livecheck installed and 'maintainer:nomaintainer'
+      fi
+      if [ -n "$openmaintainer" ]; then
+        port livecheck installed and 'maintainer:openmaintainer'
+      fi
       ;;
     *)
       exit 1
