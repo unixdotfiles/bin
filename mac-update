@@ -31,7 +31,7 @@ Dolphin_latest_version() {
 }
 
 Firefox_latest_version() {
-  curl -sS https://product-details.mozilla.org/1.0/firefox_versions.json | grep LATEST_FIREFOX_DEVEL_VERSION | sed -E "$_version_swap_string"
+  curl -sS https://product-details.mozilla.org/1.0/firefox_versions.json | grep LATEST_FIREFOX_VERSION | sed -E "$_version_swap_string"
 }
 
 GalaxyClient_latest_version() {
