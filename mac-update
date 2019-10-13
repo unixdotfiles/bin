@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# TODO:
+# - Zottero
+
 _three_part_version='[^0-9]*([0-9]+\.[0-9]+(\.[0-9]+)?).*'
 _version_swap_string="s/$_three_part_version/\1/"
 
