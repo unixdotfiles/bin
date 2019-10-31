@@ -1,42 +1,40 @@
 #!/bin/sh
 
-SANITZERS="alignment, \
-  bool, \
-  bounds, \
-  enum, \
-  float-cast-overflow, \
-  float-divide-by-zero, \
-  integer-divide-by-zero, \
-  nonnull-attribute, \
-  null, \
-  nullability-arg, \
-  nullability-assign, \
-  nullability-return, \
-  object-size, \
-  pointer-overflow, \
-  return, \
-  unsigned-integer-overflow, \
-  returns-nonnull-attribute, \
-  shift, \
-  signed-integer-overflow, \
-  unreachable, \
-  vla-bound, \
-  vptr, \
-  address
+SANITZERS="address \
+  alignment \
+  bool \
+  bounds \
+  enum \
+  float-cast-overflow \
+  float-divide-by-zero \
+  integer-divide-by-zero \
+  nonnull-attribute \
+  null \
+  nullability-arg \
+  nullability-assign \
+  nullability-return \
+  object-size \
+  pointer-overflow \
+  return \
+  returns-nonnull-attribute \
+  shift \
+  unreachable \
+  unsigned-integer-overflow \
+  vla-bound \
+  vptr
 "
 
 WARNS="-Weverything
--Wno-padded
 -Wno-missing-noreturn
+-Wno-c11-extensions
+-Wno-nullability-extension
+-Wno-macro-redefined
+-Wno-padded
 -Wno-vla
 -Wno-reserved-id-macro
--Wno-nullability-extension
--Wno-c11-extensions
 "
 
-# -fsanitize=memory,thread
-
-SANITZERS="$(printf "$SANITZERS" | tr -d ' ')"
+SANITZERS="$(printf "$SANITZERS" | sed 's/   /,/g')"
 
 exec clang \
   $WARNS \
