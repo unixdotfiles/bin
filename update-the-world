@@ -42,7 +42,7 @@ done
 
 shift "$((OPTIND - 1))"
 
-for repo in ~/bin ~/misc-scripts ~/.conf ~/svn/global
+for repo in ~/bin ~/misc-scripts ~/.conf ~/global
 do
   (
     cd "$repo" &&
