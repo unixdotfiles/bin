@@ -3,12 +3,14 @@ set -eux
 
 opt_all="--all"
 fetch=true
-while getopts AF flag
+master_branch="master"
+while getopts Ab:F flag
 do
   case "$flag" in
   A)  opt_all="" ;; # Disable --all
   F)  fetch="" ;;
-  ?)  printf "Usage: %s: [-A] ...\n" "$0"
+  b)  master_branch="$OPTARG" ;;
+  ?)  printf "Usage: %s: [-AF] [ -b branch ] ...\n" "$0"
       exit 2;;
   esac
 done
@@ -19,7 +21,7 @@ if [ -n "$fetch" ]; then
   git fetch $opt_all --prune
 fi
 git checkout --detach HEAD
-git branch -f master origin/master
+git branch -f "$master_branch" "origin/${master_branch}"
 git clean-branches
 git for-each-ref --format='%(refname:short) %(upstream:short)' refs/heads | while read -r branch upstream
 do
@@ -47,5 +49,5 @@ do
     fi
   done
 done
-git checkout master
+git checkout "${master_branch}"
 git clean-branches
