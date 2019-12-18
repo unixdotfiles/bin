@@ -1,0 +1,14 @@
+#!/bin/sh
+
+masterbranch="origin/master"
+while getopts b: flag
+do
+  case "$flag" in
+  b)  masterbranch="$OPTARG" ;;
+  ?)  printf "Usage: %s: [-b branch] ...\n" "$0"
+      exit 2;;
+  esac
+done
+
+git for-each-ref --merged="$masterbranch" refs/heads|cut -d \"\t\" -f 2|grep -v refs/heads/${masterbranch##origin/}|cut -d / -f 3- | xargs git branch -d;
+

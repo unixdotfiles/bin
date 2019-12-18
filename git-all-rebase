@@ -50,4 +50,4 @@ do
   done
 done
 git checkout "${master_branch}"
-git clean-branches
+git clean-branches -b "origin/${master_branch}"
