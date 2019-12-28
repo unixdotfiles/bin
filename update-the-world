@@ -112,7 +112,7 @@ _pip_update pip-2.7
 _pip_update pip-3.7
 #cpan -u
 vim -i NONE +PlugUpgrade +qa
-(cd ~/.conf && git commit -m "Update VimPlug config" vim/home/autoload/plug.vim && git push)
+(cd ~/.conf && git commit -m "[vim] Update VimPlug config" vim/home/autoload/plug.vim && git push)
 vim -i NONE +PlugUpdate +PlugClean! +qa
 rustup update
 rustup self update
