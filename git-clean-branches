@@ -10,5 +10,5 @@ do
   esac
 done
 
-git for-each-ref --merged="$masterbranch" refs/heads|cut -d \"\t\" -f 2|grep -v refs/heads/${masterbranch##origin/}|cut -d / -f 3- | xargs git branch -d;
+git for-each-ref --merged="$masterbranch" refs/heads|cut -d '	' -f 2|grep -v refs/heads/${masterbranch##origin/}|cut -d / -f 3- | xargs git branch -d;
 
