@@ -1,6 +1,9 @@
 #!/bin/sh
-(
-  export GOPATH=~/bin/submodules/go/
-  go get -u github.com/spf13/hugo
-)
+if [ ! -e ~/bin/submodules/go/bin/hugo ]
+then
+  (
+    export GOPATH=~/bin/submodules/go/
+    go get -u github.com/spf13/hugo
+  )
+fi
 ~/bin/submodules/go/bin/hugo "$@"
