@@ -106,7 +106,11 @@ else
 fi
 gem update --user-install
 npm -g update
-apm update --no-confirm
+if [ ! -n "$freebsd" ]
+then
+  # FreeBSD's apm is for power management
+  apm update --no-confirm
+fi
 _pip_update pip
 _pip_update pip-2.7
 _pip_update pip-3.7
