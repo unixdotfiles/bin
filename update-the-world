@@ -111,9 +111,14 @@ then
   # FreeBSD's apm is for power management
   apm update --no-confirm
 fi
+
 _pip_update pip
-_pip_update pip-2.7
-_pip_update pip-3.7
+for v in 3.6 3.7 3.8 3.9
+do
+  _pip_update pip-${v}
+  _pip_update pip${v}
+done
+
 #cpan -u
 vim -i NONE +PlugUpgrade +qa
 (cd ~/.conf && git commit -m "[vim] Update VimPlug config" vim/home/autoload/plug.vim && git push)
