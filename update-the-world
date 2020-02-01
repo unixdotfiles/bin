@@ -17,7 +17,7 @@ __exists () {
 __sudo() {
   if [ -n "$doroot" ]
   then
-    sudo "$@"
+    sudo -H "$@"
   fi
 }
 
@@ -76,40 +76,40 @@ if [ "$(uname -s)" = "Darwin" ]
 then
   if [ -n "$mac" ]
   then
-    #printf "y\nd\n"|__sudo -H port reclaim
-    __sudo -H port selfupdate
+    #printf "y\nd\n"|__sudo port reclaim
+    __sudo port selfupdate
     port outdated
-    __sudo -H port -u upgrade outdated
+    __sudo port -u upgrade outdated
     softwareupdate -i -a --verbose
-    mas upgrade
+    __exists mas && mas upgrade
     mac-update
   fi
 elif [ "$(uname -s)" = "Linux" ]
 then
-  __exists apt-get && __sudo -H apt-get update
-  __exists apt-get && __sudo -H apt-get dist-upgrade
-  __exists yum && __sudo -H yum upgrade
-  __exists pacman && __sudo -H pacman -Syu
-  __exists emerge && __sudo -H emerge --update --deep world
+  __exists apt-get && __sudo apt-get update
+  __exists apt-get && __sudo apt-get dist-upgrade
+  __exists yum && __sudo yum upgrade
+  __exists pacman && __sudo pacman -Syu
+  __exists emerge && __sudo emerge --update --deep world
 else
   if [ -n "$freebsd" ]
   then
     if [ -d /srv/src/freebsd/ports ]
     then
       (cd /srv/src/freebsd/ports && git pull --rebase)
-      sudo poudriere bulk -j amd64-matches-host -p development $(pkg query -e '%a=0' '%o') || true
+      __sudo poudriere bulk -j amd64-matches-host -p development $(pkg query -e '%a=0' '%o') || true
     fi
-    __sudo -H pkg upgrade
+    __sudo pkg upgrade
     #for jid in $(jls jid); do __sudo pkg -j $jid upgrade -y ; done
     #for jid in $(jls jid); do __sudo pkg -j $jid autoremove ; done
   fi
 fi
-gem update --user-install
-npm -g update
+__exists gem && gem update --user-install
+__exists npm && npm -g update
 if [ -z "$freebsd" ]
 then
   # FreeBSD's apm is for power management
-  apm update --no-confirm
+  __exists apm && apm update --no-confirm
 fi
 
 _pip_update pip
@@ -120,18 +120,33 @@ do
 done
 
 #cpan -u
-vim -i NONE +PlugUpgrade +qa
-(cd ~/.conf && git commit -m "[vim] Update VimPlug config" vim/home/autoload/plug.vim && git push)
-vim -i NONE +PlugUpdate +PlugClean! +qa
-rustup update
-rustup self update
-cargo search # update registry
-stack upgrade
-stack update
-R --quiet -e 'options(warn = 0); update.packages(ask = FALSE)'
-sudo pkgin -y update
-sudo pkgin -y full-upgrade
+if __exists vim
+then
+  vim -i NONE +PlugUpgrade +qa
+  (cd ~/.conf && git commit -m "[vim] Update VimPlug config" vim/home/autoload/plug.vim && git push)
+  vim -i NONE +PlugUpdate +PlugClean! +qa
+fi
+if __exists rustup
+then
+  rustup update
+  rustup self update
+fi
+if __exists cargo
+then
+  cargo search # update registry
+fi
+if __exits stack
+then
+  stack upgrade
+  stack update
+fi
+__exists R && R --quiet -e 'options(warn = 0); update.packages(ask = FALSE)'
+if __exists pkgin
+then
+  __sudo pkgin -y update
+  __sudo pkgin -y full-upgrade
+fi
 for lua in luarocks luarocks-5.3
 do
-  "$lua" install --local $("$lua" list --porcelain --outdated |cut -d '	' -f 1)
+  __exists lua && "$lua" install --local $("$lua" list --porcelain --outdated |cut -d '	' -f 1)
 done
