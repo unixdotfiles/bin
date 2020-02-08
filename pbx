@@ -1,2 +1,2 @@
 #!/bin/sh
-curl -F 'format=url' -F 'content=<-' https://dpaste.de/api/
+curl -s -F "content=<-" http://dpaste.com/api/v2/
