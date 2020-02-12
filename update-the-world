@@ -94,11 +94,7 @@ then
 else
   if [ -n "$freebsd" ]
   then
-    if [ -d /srv/src/freebsd/ports ]
-    then
-      (cd /srv/src/freebsd/ports && git pull --rebase)
-      __sudo poudriere bulk -j amd64-matches-host -p development $(pkg query -e '%a=0' '%o') || true
-    fi
+    fbsd-rebuild
     __sudo pkg upgrade
     #for jid in $(jls jid); do __sudo pkg -j $jid upgrade -y ; done
     #for jid in $(jls jid); do __sudo pkg -j $jid autoremove ; done
