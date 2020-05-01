@@ -1,0 +1,17 @@
+#!/usr/bin/env zsh
+sites="
+1.1.1.1 \
+8.8.8.8 \
+isup.me \
+hover.com \
+godaddy.com \
+google.com \
+jira.twitter.biz \
+ostechnix.com \
+range.co \
+twitter.com \
+wikipedia.org \
+www.msftncsi.com \
+"
+
+fping -A -n -m -l -Q 1 -o -u $sites
