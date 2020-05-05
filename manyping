@@ -1,5 +1,6 @@
 #!/usr/bin/env zsh
 sites="
+192.168.200.1
 1.1.1.1 \
 8.8.8.8 \
 isup.me \
