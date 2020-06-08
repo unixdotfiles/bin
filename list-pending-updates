@@ -1,6 +1,6 @@
 #!/bin/sh
 
-trap quit INT
+trap 'exit 0' INT
 
 unmaintained=""
 openmaintainer=""
