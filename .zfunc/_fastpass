@@ -1,0 +1,5 @@
+#compdef _fastpass fastpass
+
+function _fastpass {
+    compadd $(fastpass tab-complete --current $CURRENT --format zsh $words[@])
+}
