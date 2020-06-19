@@ -1,6 +1,7 @@
 #!/usr/bin/env zsh
+router=$(netstat -rn -f inet -l|awk '/default/ {print $2}')
 sites="
-192.168.200.1
+$router
 1.1.1.1 \
 8.8.8.8 \
 isup.me \
