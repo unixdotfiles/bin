@@ -22,7 +22,7 @@ if [ -n "$fetch" ]; then
 fi
 git checkout --detach HEAD
 git branch -f "$master_branch" "origin/${master_branch}"
-git clean-branches
+git clean-branches -b "origin/${master_branch}"
 git for-each-ref --format='%(refname:short) %(upstream:short)' refs/heads | while read -r branch upstream
 do
   if [ -z "$upstream" ]; then
