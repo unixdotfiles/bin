@@ -1,0 +1,18 @@
+git_master_branch() {
+	# config_master_branch=$(git config --get eax.master_branch 2>&1) 
+	if [ -n "$config_master_branch" ];
+	then
+		echo "$config_master_branch";
+		return
+	fi
+	for possible_branch in master main trunk develop;
+	do
+    if git show-ref --verify --quiet "refs/heads/$possible_branch";
+    then
+      echo "$possible_branch";
+      return
+    fi
+  done
+  echo master
+	return
+}

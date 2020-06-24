@@ -1,6 +1,18 @@
 #!/bin/sh
 set -e
 
+. ~/bin/.lib/git-lib
+
+masterbranch="$(git_master_branch)"
+while getopts b: flag
+do
+  case "$flag" in
+  b)  masterbranch="$OPTARG" ;;
+  ?)  printf "Usage: %s: [-b branch] ...\n" "$0"
+      exit 2;;
+  esac
+done
+
 git checkout --detach HEAD
-git branch -f master origin/master
-git checkout master
+git branch -f "$masterbranch" "origin/$masterbranch"
+git checkout "$masterbranch"
