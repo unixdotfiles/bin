@@ -1,9 +1,11 @@
 #!/bin/sh
 set -eux
 
+. ~/bin/.lib/git-lib
+
+masterbranch="$(git_master_branch)"
 opt_all="--all"
 fetch=true
-master_branch="master"
 while getopts Ab:F flag
 do
   case "$flag" in

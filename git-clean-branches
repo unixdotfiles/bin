@@ -1,6 +1,8 @@
 #!/bin/sh
 
-masterbranch="origin/master"
+. ~/bin/.lib/git-lib
+
+masterbranch="$(git_master_branch)"
 while getopts b: flag
 do
   case "$flag" in
