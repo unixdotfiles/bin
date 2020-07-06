@@ -3,7 +3,7 @@ set -eux
 
 . ~/bin/.lib/git-lib
 
-masterbranch="$(git_master_branch)"
+master_branch="$(git_master_branch)"
 opt_all="--all"
 fetch=true
 while getopts Ab:F flag
