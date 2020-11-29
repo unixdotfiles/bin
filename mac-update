@@ -66,6 +66,10 @@ BackgroundMusic_latest_version() {
   curl -sS https://api.github.com/repos/kyleneideck/BackgroundMusic/releases/latest | grep -m1 '"tag_name"' | sed -E "$_version_swap_string"
 }
 
+OpenEmu_latest_version() {
+  curl -sS https://api.github.com/repos/OpenEmu/OpenEmu/releases/latest | grep -m1 '"tag_name"' | sed -E "$_version_swap_string"
+}
+
 Unknown() {
   echo unknown
 }
@@ -115,6 +119,7 @@ check_app() {
 
 _info_print "Program" "Latest" "Installed"
 
+check_app OpenEmu "OpenEmu_latest_version"
 check_app calibre "calibre_latest_version"
 check_app Skim "Skim_latest_version"
 check_app Audacity "Audacity_latest_version"
