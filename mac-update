@@ -58,6 +58,10 @@ Atom_latest_version() {
   _github_releases_latest_version atom/atom
 }
 
+Clipy_latest_version() {
+  _github_releases_latest_version Clipy/Clipy
+}
+
 TransmissionGUI_latest_version() {
   v=$(curl -s https://api.github.com/repos/transmission-remote-gui/transgui/releases/latest | grep -m1 '"tag_name"' | sed -E "$_version_swap_string")
   printf "Transmission Remote GUI %s" "$v"
@@ -120,6 +124,7 @@ check_app() {
 
 _info_print "Program" "Latest" "Installed"
 
+check_app Clipy "Clipy_latest_version"
 check_app OpenEmu "OpenEmu_latest_version"
 check_app calibre "calibre_latest_version"
 check_app Skim "Skim_latest_version"
