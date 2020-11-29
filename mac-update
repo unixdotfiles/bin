@@ -63,7 +63,7 @@ Clipy_latest_version() {
 }
 
 TransmissionGUI_latest_version() {
-  v=$(curl -s https://api.github.com/repos/transmission-remote-gui/transgui/releases/latest | grep -m1 '"tag_name"' | sed -E "$_version_swap_string")
+  v=$(_github_releases_latest_version transmission-remote-gui/transgui)
   printf "Transmission Remote GUI %s" "$v"
 }
 
