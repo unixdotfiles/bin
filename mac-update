@@ -38,9 +38,9 @@ Firefox_latest_version() {
   curl -sS https://product-details.mozilla.org/1.0/firefox_versions.json | grep LATEST_FIREFOX_VERSION | sed -E "$_version_swap_string"
 }
 
-GalaxyClient_latest_version() {
-  curl -sS https://cfg.gog.com/desktop-galaxy-updater/5/preview/files-osx.json | grep version | sed -E "$_version_swap_string"
-}
+#GalaxyClient_latest_version() {
+#  curl -sS https://cfg.gog.com/desktop-galaxy-updater/6/preview/files-osx.json | grep version | sed -E "$_version_swap_string"
+#}
 
 OnePassword_latest_version() {
   curl -sSI https://app-updates.agilebits.com/download/OPM4 | grep Location | sed -E "s/.*-$_three_part_version/\1/"
@@ -75,7 +75,7 @@ OpenEmu_latest_version() {
   _github_releases_latest_version OpenEmu/OpenEmu
 }
 
-Unknown() {
+_Unknown() {
   echo unknown
 }
 
@@ -133,11 +133,11 @@ check_app Firefox "Firefox_latest_version"
 check_app UnicodeChecker "UnicodeChecker_latest_version"
 check_app 'Scroll Reverser' "ScrollReverser_latest_version"
 check_app Dolphin "Dolphin_latest_version"
-check_app 'GOG Galaxy' "GalaxyClient_latest_version"
+check_app 'GOG Galaxy' _Unknown
 #check_app '1Password 6' "OnePassword_latest_version"
 check_app 'Hex Fiend' "HexFiend_latest_version"
 check_app 'Atom' "Atom_latest_version"
-check_app 'Tunnelblick' Unknown
+check_app 'Tunnelblick' _Unknown
 check_app 'Transmission Remote GUI' TransmissionGUI_latest_version
 check_app 'Merlin Project' Merlin_latest_version
 check_app 'Background Music' BackgroundMusic_latest_version
