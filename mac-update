@@ -6,8 +6,6 @@
 _three_part_version='[^0-9]*([0-9]+\.[0-9]+(\.[0-9]+)?).*'
 _version_swap_string="s/$_three_part_version/\1/"
 
-#TODO: replace grep|sed with awk
-
 calibre_latest_version() {
   curl -sSk https://code.calibre-ebook.com/latest
 }
