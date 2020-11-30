@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/zsh
 
 _three_part_version='[^0-9]*([0-9]+\.[0-9]+(\.[0-9]+)?).*'
 _version_swap_string="s/$_three_part_version/\1/"
@@ -14,7 +14,7 @@ calibre_latest_version() {
 }
 
 Skim_latest_version() {
-  curl -sS https://sourceforge.net/p/skim-app/code/HEAD/tree/trunk/Info.plist?format=raw |grep -A2 CFBundleShortVersionString | grep string| sed -E "$_version_swap_string"
+  curl -sS https://sourceforge.net/p/skim-app/code/HEAD/tree/trunk/Info.plist?format=raw |grep -A2 CFBundleShortVersionString | grep string | sed -E "$_version_swap_string"
 }
 
 Audacity_latest_version() {
@@ -128,21 +128,29 @@ check_app() {
 
 _info_print "Program" "Latest" "Installed"
 
-check_app Keycastr "Keycastr_latest_version"
-check_app Clipy "Clipy_latest_version"
-check_app OpenEmu "OpenEmu_latest_version"
-check_app calibre "calibre_latest_version"
-check_app Skim "Skim_latest_version"
-check_app Audacity "Audacity_latest_version"
-check_app Firefox "Firefox_latest_version"
-check_app UnicodeChecker "UnicodeChecker_latest_version"
-check_app 'Scroll Reverser' "ScrollReverser_latest_version"
-check_app Dolphin "Dolphin_latest_version"
-check_app 'GOG Galaxy' _Unknown
-#check_app '1Password 6' "OnePassword_latest_version"
-check_app 'Hex Fiend' "HexFiend_latest_version"
-check_app 'Atom' "Atom_latest_version"
-check_app 'Tunnelblick' _Unknown
-check_app 'Transmission Remote GUI' TransmissionGUI_latest_version
-check_app 'Merlin Project' Merlin_latest_version
-check_app 'Background Music' BackgroundMusic_latest_version
+declare -A appdata
+appdata[Keycastr]="Keycastr_latest_version"
+appdata[Clipy]="Keycastr_latest_version"
+appdata[OpenEmu]="OpenEmu_latest_version"
+appdata[calibre]="calibre_latest_version"
+appdata[Skim]="Skim_latest_version"
+appdata[Audacity]="Audacity_latest_version"
+appdata[Firefox]="Firefox_latest_version"
+appdata[UnicodeChecker]="UnicodeChecker_latest_version"
+appdata["Scroll Reverser"]="ScrollReverser_latest_version"
+appdata[Dolphin]="Dolphin_latest_version"
+appdata["GOG Galaxy"]="_Unknown"
+appdata["1Password 6"]="OnePassword_latest_version"
+appdata["Hex Fiend"]="HexFiend_latest_version"
+appdata[Atom]="Atom_latest_version"
+appdata[Tunnelblick]="_Unknown"
+appdata["Transmission Remote GUI"]="TransmissionGUI_latest_version"
+appdata["Merlin Project"]="Merlin_latest_version"
+appdata["Background Music"]="BackgroundMusic_latest_version"
+
+
+for app func in "${(@Qkv)appdata}"
+do
+  check_app "$app" "$func"
+done
+
