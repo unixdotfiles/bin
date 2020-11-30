@@ -14,7 +14,7 @@ calibre_latest_version() {
 }
 
 Skim_latest_version() {
-  curl -sS https://sourceforge.net/p/skim-app/code/HEAD/tree/trunk/Info.plist?format=raw |grep -A2 CFBundleShortVersionString | grep string | sed -E "$_version_swap_string"
+  curl -sS "https://sourceforge.net/p/skim-app/code/HEAD/tree/trunk/Info.plist?format=raw" |grep -A2 CFBundleShortVersionString | grep string | sed -E "$_version_swap_string"
 }
 
 Audacity_latest_version() {
