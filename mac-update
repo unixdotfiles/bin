@@ -75,6 +75,10 @@ OpenEmu_latest_version() {
   _github_releases_latest_version OpenEmu/OpenEmu
 }
 
+Keycastr_latest_version() {
+  _github_releases_latest_version keycastr/keycastr
+}
+
 _Unknown() {
   echo unknown
 }
@@ -124,6 +128,7 @@ check_app() {
 
 _info_print "Program" "Latest" "Installed"
 
+check_app Keycastr "Keycastr_latest_version"
 check_app Clipy "Clipy_latest_version"
 check_app OpenEmu "OpenEmu_latest_version"
 check_app calibre "calibre_latest_version"
