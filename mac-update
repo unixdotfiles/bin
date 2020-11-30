@@ -1,5 +1,7 @@
 #!/bin/zsh
 
+unsetopt shwordsplit
+
 _three_part_version='[^0-9]*([0-9]+\.[0-9]+(\.[0-9]+)?).*'
 _version_swap_string="s/$_three_part_version/\1/"
 
@@ -151,8 +153,21 @@ Tunnelblick "_Unknown"
 )
 
 
-for app func in "${(@Qkv)appdata}"
+declare -a whichapps
+while getopts 'n:' arg
 do
-  check_app "$app" "$func"
+  case $arg in
+    n) whichapps+=("$OPTARG");
+  esac
+done
+
+if [[ ${#whichapps} -eq 0 ]]
+then
+  whichapps=(${(@k)appdata})
+fi
+
+for app in "${(@)whichapps}"
+do
+  check_app "$app" "${appdata[$app]}"
 done
 
