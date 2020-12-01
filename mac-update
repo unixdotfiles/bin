@@ -81,6 +81,10 @@ Keycastr_latest_version() {
   _github_releases_latest_version keycastr/keycastr
 }
 
+Transmission_latest_version() {
+  _github_releases_latest_version transmission/transmission
+}
+
 _Unknown() {
   echo unknown
 }
@@ -150,6 +154,7 @@ Tunnelblick "_Unknown"
 "Transmission Remote GUI" "TransmissionGUI_latest_version"
 "Merlin Project" "Merlin_latest_version"
 "Background Music" "BackgroundMusic_latest_version"
+"Transmission" "Transmission_latest_version"
 )
 
 
