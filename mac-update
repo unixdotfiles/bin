@@ -2,6 +2,41 @@
 
 unsetopt shwordsplit
 
+# - Amphetamine
+# - Amphetamine Enhancer
+# - Android File Transfer
+# - Authy Desktop
+# - Cityographer
+# - Discord
+# - Dolphin
+# - DriveThruRPG
+# - FoundryVTT
+# - Go64
+# - ICue
+# - Iterm
+# - Itsycal
+# - Jamovi
+# - Jetbrains Toolbox
+# - Openboard
+# - Opera Developer
+# - Pandora
+# - SceneBuilder
+# - Slack
+# - Steam
+# - Textual
+# - Transmission
+# - VLC
+# - Virtualbox
+# - Wineskin Winery
+# - Wireshark
+# - Wonderdraft
+# - Worldographer
+# - XMind
+# - Yourkit
+# - Zoom
+# - Zottero
+# - lghub
+
 _three_part_version='[^0-9]*([0-9]+\.[0-9]+(\.[0-9]+)?).*'
 _version_swap_string="s/$_three_part_version/\1/"
 
