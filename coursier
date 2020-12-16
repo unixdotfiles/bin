@@ -1,0 +1,13 @@
+#!/bin/zsh
+bindir=~/.cache/bin-bin
+cs="${bindir}/cs"
+[[ ! -d "$bindir" ]] && mkdir -p "$bindir"
+if [[ ! -x "$cs" ]]
+then
+  # sad.
+  curl -fLo "$cs" https://git.io/coursier-cli-macos  &&
+  chmod +x "$cs" &&
+  (xattr -d com.apple.quarantine "$cs" || true)
+fi
+
+"$cs" "$@"
