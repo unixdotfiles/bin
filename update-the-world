@@ -129,7 +129,7 @@ if __exists cargo
 then
   cargo search # update registry
 fi
-if __exits stack
+if __exists stack
 then
   stack upgrade
   stack update
