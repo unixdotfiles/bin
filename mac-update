@@ -65,7 +65,7 @@ Skim_latest_version() {
 
 Audacity_latest_version() {
   # the extra .0 is a hack, but leave for now until I see it matters
-  printf "%s.0" $(curl -sS https://api.github.com/repos/audacity/audacity/releases/latest | grep '"name"' | sed -E "$_version_swap_string")
+  printf "%s.0" $(curl -sS https://api.github.com/repos/audacity/audacity/releases/latest  | jq '.name' | sed -E "$_version_swap_string")
 }
 
 HexFiend_latest_version() {
@@ -81,7 +81,7 @@ Dolphin_latest_version() {
 }
 
 Firefox_latest_version() {
-  curl -sS https://product-details.mozilla.org/1.0/firefox_versions.json | grep LATEST_FIREFOX_VERSION | sed -E "$_version_swap_string"
+  curl -sS https://product-details.mozilla.org/1.0/firefox_versions.json | jq '.LATEST_FIREFOX_VERSION' | sed -E "$_version_swap_string"
 }
 
 #GalaxyClient_latest_version() {
@@ -89,7 +89,7 @@ Firefox_latest_version() {
 #}
 
 OnePassword_latest_version() {
-  curl -sSI https://app-updates.agilebits.com/download/OPM4 | grep Location | sed -E "s/.*-$_three_part_version/\1/"
+  curl -sSI https://app-updates.agilebits.com/download/OPM7 | grep Location | sed -E "s/.*-$_three_part_version/\1/"
 }
 
 UnicodeChecker_latest_version() {
