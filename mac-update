@@ -47,7 +47,7 @@ _version_swap_string="s/$_three_part_version/\1/"
 
 _github_releases_latest_version() {
   repo="$1"
-  curl -sS "https://api.github.com/repos/${repo}/releases/latest" | grep -m1 '"tag_name"' | sed -E "$_version_swap_string"
+  curl -sS "https://api.github.com/repos/${repo}/releases/latest" | jq '.tag_name' | sed -E "$_version_swap_string"
 }
 
 _github_tags_latest_version() {
@@ -185,7 +185,7 @@ _info_print "Program" "Latest" "Installed"
 declare -A appdata
 appdata=(
 Keycastr "Keycastr_latest_version"
-Clipy "Keycastr_latest_version"
+Clipy "Clipy_latest_version"
 OpenEmu "OpenEmu_latest_version"
 calibre "calibre_latest_version"
 Skim "Skim_latest_version"
