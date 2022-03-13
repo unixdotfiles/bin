@@ -93,7 +93,7 @@ OnePassword_latest_version() {
 }
 
 UnicodeChecker_latest_version() {
-  curl -sS -H 'range: bytes=500-900' https://earthlingsoft.net/UnicodeChecker/appcast.xml |grep shortVersionString |cut -d '"' -f 2
+  curl -sS -H 'range: bytes=500-900' https://earthlingsoft.net/UnicodeChecker/appcast.xml |grep shortVersionString | cut -d / -f 5| sed 's/%20/ /g' | cut -d ' ' -f 2
 }
 
 Merlin_latest_version() {
