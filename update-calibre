@@ -1,8 +1,11 @@
 #!/bin/zsh
-
 set -v
 dir=$(mktemp -d)
 curl -o "$dir/out.dmg" -L https://calibre-ebook.com/dist/osx
+for old in /Volumes/calibre-*
+do
+	hdiutil detach "$old"
+done
 hdiutil attach $dir/out.dmg 
 cd /Volumes/calibre-*
 cp -a calibre.app /Applications/calibre.app
