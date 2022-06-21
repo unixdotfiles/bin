@@ -120,6 +120,12 @@ then
   (cd ~/.conf && git commit -m "[vim] Update VimPlug config" vim/home/autoload/plug.vim && git push)
   vim -i NONE +PlugUpdate +PlugClean! +qa
 fi
+if __exists nvim
+then
+  nvim -i NONE +PlugUpgrade +qa
+  (cd ~/.conf && git commit -m "[vim] Update VimPlug config" nvim/home/autoload/plug.vim && git push)
+  nvim -i NONE +PlugUpdate +PlugClean! +qa
+fi
 if __exists rustup
 then
   rustup update
