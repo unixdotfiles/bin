@@ -1,8 +1,9 @@
 #!/bin/zsh
+setopt extendedglob
 set -v
 dir=$(mktemp -d)
 curl -o "$dir/out.dmg" -L https://calibre-ebook.com/dist/osx
-for old in /Volumes/calibre-*
+for old in /Volumes/calibre-*(N)
 do
 	hdiutil detach "$old"
 done
