@@ -2,12 +2,15 @@
 setopt extendedglob
 set -v
 dir=$(mktemp -d)
+echo "$dir"
 curl -o "$dir/out.dmg" -L https://calibre-ebook.com/dist/osx
 for old in /Volumes/calibre-*(N)
 do
 	hdiutil detach "$old"
 done
-hdiutil attach $dir/out.dmg 
+hdiutil attach $dir/out.dmg
 cd /Volumes/calibre-*
+mv /Applications/calibre.app /Applications/old.calibre.app
 cp -a calibre.app /Applications/calibre.app
+rm -rf /Applications/old.calibre.app
 hdiutil detach /Volumes/calibre-*
