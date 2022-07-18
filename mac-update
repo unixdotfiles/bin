@@ -100,10 +100,6 @@ Merlin_latest_version() {
   curl -sS https://www.projectwizards.net/en/support/release-notes/merlin-project-pwstore/xml |grep shortVersionString | cut -d '"' -f 2 | cut -d ' ' -f 1
 }
 
-Atom_latest_version() {
-  _github_releases_latest_version atom/atom
-}
-
 Clipy_latest_version() {
   _github_releases_latest_version Clipy/Clipy
 }
@@ -197,7 +193,6 @@ Dolphin "Dolphin_latest_version"
 "GOG Galaxy" "_Unknown"
 "1Password 7" "OnePassword_latest_version"
 "Hex Fiend" "HexFiend_latest_version"
-Atom "Atom_latest_version"
 Tunnelblick "_Unknown"
 "Transmission Remote GUI" "TransmissionGUI_latest_version"
 "Merlin Project" "Merlin_latest_version"
