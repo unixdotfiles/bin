@@ -3,7 +3,7 @@ if [ ! -e ~/bin/submodules/go/bin/hugo ]
 then
   (
     export GOPATH=~/bin/submodules/go/
-    go get -u github.com/spf13/hugo
+    go install github.com/gohugoio/hugo@latest
   )
 fi
 ~/bin/submodules/go/bin/hugo "$@"
