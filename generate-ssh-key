@@ -1,0 +1,14 @@
+if [ $# -ne 2 ];
+then
+  echo $0 user host
+  exit 1
+fi
+user="$1"
+host="$2"
+
+if [ ! -d "$HOME/.ssh" ]
+then
+  mkdir "$HOME/.ssh"
+fi
+
+ssh-keygen -t ed25519 -f "$HOME/.ssh/$user@id_ed25519_$host" -C "$host"
