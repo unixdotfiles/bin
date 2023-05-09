@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env zsh
 
 . ~/bin/.lib/git-lib
 
@@ -12,5 +12,9 @@ do
   esac
 done
 
-git for-each-ref --merged="$masterbranch" refs/heads|cut -d '	' -f 2|grep -v refs/heads/${masterbranch##origin/}|cut -d / -f 3- | xargs git branch -d;
+branches="$(git for-each-ref --merged="$masterbranch" --format="%(refname:short)" refs/heads|grep -v ${masterbranch##origin/})"
+if [[ -n "$branches" ]]
+then
+  git for-each-ref --merged="$masterbranch" --format="%(refname:short)" refs/heads|grep -v ${masterbranch##origin/} | xargs git branch -d;
+fi
 
