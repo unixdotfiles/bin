@@ -1,0 +1,9 @@
+#!/usr/bin/env zsh
+
+if [[ $# -ne 1 ]]
+then
+  echo "usage: $0 sha"
+  exit 1
+fi
+
+PAGER=cat gh pr list --search ${1} --state all --json url --jq '.[0].url'
