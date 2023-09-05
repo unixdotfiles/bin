@@ -4,9 +4,6 @@
 [submodule "submodules/ministat"]
 	path = submodules/ministat
 	url = https://github.com/codahale/ministat.git
-[submodule "submodules/arcanist"]
-	path = submodules/arcanist
-	url = https://github.com/phacility/arcanist.git
 [submodule "submodules/check-soa"]
 	path = submodules/check-soa
 	url = https://github.com/bortzmeyer/check-soa.git
