@@ -82,6 +82,9 @@ then
     __exists mas && mas upgrade
     mac-update
   fi
+  brew update
+  brew upgrade
+  brew upgrade --cask
 elif [ "$(uname -s)" = "Linux" ]
 then
   __exists apt-get && __sudo apt-get update
