@@ -3,7 +3,7 @@ if [ ! -e ~/bin/submodules/go/bin/hugo ]
 then
   (
     export GOPATH=~/bin/submodules/go/
-    go install github.com/gohugoio/hugo@latest
+    CGO_ENABLED=1 go install -tags extended github.com/gohugoio/hugo@latest
   )
 fi
 ~/bin/submodules/go/bin/hugo "$@"
