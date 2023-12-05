@@ -89,7 +89,7 @@ Firefox_latest_version() {
 #}
 
 OnePassword_latest_version() {
-  curl -sSI https://app-updates.agilebits.com/download/OPM7 | grep location | sed -E "s/.*-$_three_part_version/\1/"
+  curl -sSI https://app-updates.agilebits.com/download/OPM8 | grep location | sed -E "s/.*-$_three_part_version/\1/"
 }
 
 UnicodeChecker_latest_version() {
@@ -191,7 +191,7 @@ UnicodeChecker "UnicodeChecker_latest_version"
 "Scroll Reverser" "ScrollReverser_latest_version"
 Dolphin "Dolphin_latest_version"
 "GOG Galaxy" "_Unknown"
-"1Password 7" "OnePassword_latest_version"
+"1Password" "OnePassword_latest_version"
 "Hex Fiend" "HexFiend_latest_version"
 Tunnelblick "_Unknown"
 "Transmission Remote GUI" "TransmissionGUI_latest_version"
