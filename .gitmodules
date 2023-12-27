@@ -23,3 +23,6 @@
 [submodule "submodules/setledsmac"]
 	path = submodules/setledsmac
 	url = git@github.com:damieng/setledsmac.git
+[submodule "submodules/zsh-bench"]
+	path = submodules/zsh-bench
+	url = git@github.com:romkatv/zsh-bench.git
