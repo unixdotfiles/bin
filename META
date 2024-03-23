@@ -1,3 +1,3 @@
-imgcat: https://raw.githubusercontent.com/gnachman/iTerm2/master/tests/imgcat
+imgcat: https://iterm2.com/utilities/imgcat
 _rustup: "rustup completions"
 _gh: "gh completion -s zsh"
