@@ -70,36 +70,36 @@ _pip_update() {
 }
 
 while true; do __sudo -v; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
-if [ "$(uname -s)" = "Darwin" ]
+if [ -n "$mac" ]
 then
-  if [ -n "$mac" ]
+  #printf "y\nd\n"|__sudo port reclaim
+  if __exists port
   then
-    #printf "y\nd\n"|__sudo port reclaim
     __sudo port selfupdate
     port outdated
     __sudo port -u upgrade outdated
-    softwareupdate -i -a --verbose
-    __exists mas && mas upgrade
-    mac-update
   fi
-  brew update
-  brew upgrade
-  brew upgrade --cask
-elif [ "$(uname -s)" = "Linux" ]
-then
-  __exists apt-get && __sudo apt-get update
-  __exists apt-get && __sudo apt-get dist-upgrade
-  __exists yum && __sudo yum upgrade
-  __exists pacman && __sudo pacman -Syu
-  __exists emerge && __sudo emerge --update --deep world
-else
-  if [ -n "$freebsd" ]
+  softwareupdate -i -a --verbose
+  __exists mas && mas upgrade
+  mac-update
+  if __exists brew
   then
-    fbsd-rebuild
-    __sudo pkg upgrade
-    #for jid in $(jls jid); do __sudo pkg -j $jid upgrade -y ; done
-    #for jid in $(jls jid); do __sudo pkg -j $jid autoremove ; done
+    brew update
+    brew upgrade
+    brew upgrade --cask
   fi
+fi
+__exists apt-get && __sudo apt-get update
+__exists apt-get && __sudo apt-get dist-upgrade
+__exists yum && __sudo yum upgrade
+__exists pacman && __sudo pacman -Syu
+__exists emerge && __sudo emerge --update --deep world
+if [ -n "$freebsd" ]
+then
+  fbsd-rebuild
+  __sudo pkg upgrade
+  #for jid in $(jls jid); do __sudo pkg -j $jid upgrade -y ; done
+  #for jid in $(jls jid); do __sudo pkg -j $jid autoremove ; done
 fi
 __exists gem && gem update --user-install
 __exists npm && npm -g update
@@ -110,7 +110,7 @@ then
 fi
 
 _pip_update pip
-for v in 3.8 3.9 3.10 3.11
+for v in 3.8 3.9 3.10 3.11 3.12
 do
   _pip_update pip-${v}
   _pip_update pip${v}
