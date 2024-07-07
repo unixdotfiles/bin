@@ -101,7 +101,7 @@ then
   #for jid in $(jls jid); do __sudo pkg -j $jid upgrade -y ; done
   #for jid in $(jls jid); do __sudo pkg -j $jid autoremove ; done
 fi
-__exists gem && gem update --user-install
+# __exists gem && gem update --user-install
 __exists npm && npm -g update
 if [ -z "$freebsd" ]
 then
