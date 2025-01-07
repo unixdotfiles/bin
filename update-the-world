@@ -85,7 +85,7 @@ then
   if __exists brew
   then
     brew update
-    brew upgrade
+    brew upgrade --greedy
     brew upgrade --cask
   fi
 fi
