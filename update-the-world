@@ -82,6 +82,7 @@ then
   softwareupdate -i -a --verbose
   __exists mas && mas upgrade
   mac-update
+  update-kitty
   if __exists brew
   then
     brew update
