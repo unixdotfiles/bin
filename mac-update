@@ -54,7 +54,7 @@ _version_swap_string="s/$_three_part_version/\1/"
 
 _github_releases_v2_latest_version() {
   repo="$1"
-  gh release -R "$repo" list -L 1 --exclude-drafts --exclude-pre-releases -O desc --json name -q '.[].name'
+  gh release -R "$repo" list -L 1 --exclude-drafts --exclude-pre-releases -O desc --json tagName -q '.[].tagName'
 }
 
 _github_releases_latest_version() {
@@ -73,6 +73,10 @@ Hugo_latest_version() {
 
 Hugo_current_version() {
   hugo version | grep -E -o 'v([0-9.]+)' | grep -E -o '([0-9.]+)'
+}
+
+Kitty_latest_version() {
+  _github_releases_v2_latest_version "kovidgoyal/kitty" | grep -E -o 'v([0-9.]+)' | grep -E -o '([0-9.]+)'
 }
 
 calibre_latest_version() {
@@ -219,6 +223,7 @@ Tunnelblick "_Unknown"
 "Background Music" "BackgroundMusic_latest_version"
 "Transmission" "Transmission_latest_version"
 "Wireshark" "Wireshark_latest_version"
+"Kitty" "Kitty_latest_version"
 "hugo" "Hugo_latest_version"
 )
 
