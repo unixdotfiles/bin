@@ -42,8 +42,20 @@ then
   exit 1
 fi
 
+if ! (( $+commands[gh] ))
+then
+  echo "Ensure gh is on PATH" >&2
+  exit 1
+fi
+
+
 _three_part_version='[^0-9]*([0-9]+\.[0-9]+(\.[0-9]+)?).*'
 _version_swap_string="s/$_three_part_version/\1/"
+
+_github_releases_v2_latest_version() {
+  repo="$1"
+  gh release -R "$repo" list -L 1 --exclude-drafts --exclude-pre-releases -O desc --json name -q '.[].name'
+}
 
 _github_releases_latest_version() {
   repo="$1"
@@ -53,6 +65,14 @@ _github_releases_latest_version() {
 _github_tags_latest_version() {
   repo="$1"
   curl -sS "https://api.github.com/repos/${repo}/tags?per_page=1" | jq '.[0].name' | sed -E "${_version_swap_string}"
+}
+
+Hugo_latest_version() {
+  _github_releases_v2_latest_version "gohugoio/hugo"
+}
+
+Hugo_current_version() {
+  hugo version | grep -E -o 'v([0-9.]+)' | grep -E -o '([0-9.]+)'
 }
 
 calibre_latest_version() {
@@ -137,7 +157,7 @@ _info_print() {
   printf "%-30s\t%-30s\t%-30s\n" "$1" "$2" "$3"
 }
 
-check_program_version() {
+print_program_version() {
   program="$1"
   installed="$2"
   current="$3"
@@ -155,7 +175,7 @@ check_installed_app() {
 
   current_ver=$(defaults read "/Applications/$app.app/Contents/Info.plist" CFBundleShortVersionString)
 
-  check_program_version "$app" "$current_ver" "$latest_version"
+  print_program_version "$app" "$current_ver" "$latest_version"
 
 }
 
@@ -199,6 +219,12 @@ Tunnelblick "_Unknown"
 "Background Music" "BackgroundMusic_latest_version"
 "Transmission" "Transmission_latest_version"
 "Wireshark" "Wireshark_latest_version"
+"hugo" "Hugo_latest_version"
+)
+
+declare -A non_standard_version_check_app
+non_standard_version_check_app=(
+"hugo" "Hugo_current_version"
 )
 
 
@@ -215,8 +241,20 @@ then
   whichapps=(${(@k)appdata})
 fi
 
+has_key() {
+   local var="${1}[$2]"
+   (( ${(P)+${var}} )) && return 0
+   return 1
+}
+
 for app in "${(@)whichapps}"
 do
-  check_app "$app" "${appdata[$app]}"
+  if has_key "non_standard_version_check_app" "$app"
+  then
+    print_program_version "$($non_standard_version_check_app[$app])" "$($appdata[$app])"
+  elif has_key "appdata" "$app"
+  then
+    check_app "$app" "${appdata[$app]}"
+  fi
 done
 
