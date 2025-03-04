@@ -54,7 +54,7 @@ _version_swap_string="s/$_three_part_version/\1/"
 
 _github_releases_v2_latest_version() {
   repo="$1"
-  gh release -R "$repo" list -L 1 --exclude-drafts --exclude-pre-releases -O desc --json tagName -q '.[].tagName'
+  gh release -R "$repo" list -L 1 --exclude-drafts --exclude-pre-releases -O desc --json tagName -q '.[].tagName' | sed -E "$_version_swap_string"
 }
 
 _github_releases_latest_version() {
@@ -256,7 +256,7 @@ for app in "${(@)whichapps}"
 do
   if has_key "non_standard_version_check_app" "$app"
   then
-    print_program_version "$($non_standard_version_check_app[$app])" "$($appdata[$app])"
+    print_program_version "hugo" "$($non_standard_version_check_app[$app])" "$($appdata[$app])"
   elif has_key "appdata" "$app"
   then
     check_app "$app" "${appdata[$app]}"
