@@ -1,6 +1,17 @@
-#!/bin/zsh
+#!/usr/bin/env zsh
 
+autoload colors; colors
+zmodload zsh/zutil
 unsetopt shwordsplit
+
+usage() {
+  echo "$fg[blue]mac-update [-n program]$reset_color" >&2
+}
+
+fail() {
+  echo "$fg[red]$@$reset_color" >&2 ;
+  exit 1
+}
 
 # - Amphetamine
 # - Amphetamine Enhancer
@@ -38,14 +49,12 @@ unsetopt shwordsplit
 
 if ! (( $+commands[jq] ))
 then
-  echo "Ensure jq is on PATH" >&2
-  exit 1
+  fail "Ensure jq is on PATH"
 fi
 
 if ! (( $+commands[gh] ))
 then
-  echo "Ensure gh is on PATH" >&2
-  exit 1
+  fail "Ensure gh is on PATH"
 fi
 
 
@@ -238,16 +247,8 @@ non_standard_version_check_app=(
 
 
 declare -a whichapps
-while getopts 'n:' arg
-do
-  case $arg in
-    n) whichapps+=("$OPTARG");;
-    *)
-      echo "invalid option" >&2
-      exit 1
-      ;;
-  esac
-done
+zparseopts -F -D -- n+:=whichapps || {usage; fail "invalid option"}
+
 
 if [[ ${#whichapps} -eq 0 ]]
 then
