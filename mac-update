@@ -52,9 +52,13 @@ fi
 _three_part_version='[^0-9]*([0-9]+\.[0-9]+(\.[0-9]+)?).*'
 _version_swap_string="s/$_three_part_version/\1/"
 
+__remove_leading_version_v() {
+  grep -E -o 'v([0-9.]+)' | grep -E -o '([0-9.]+)'
+}
+
 _github_releases_v2_latest_version() {
   repo="$1"
-  gh release -R "$repo" list -L 1 --exclude-drafts --exclude-pre-releases -O desc --json tagName -q '.[].tagName' | sed -E "$_version_swap_string"
+  gh release -R "$repo" list -L 1 --exclude-drafts --exclude-pre-releases -O desc --json tagName -q '.[].tagName'
 }
 
 _github_releases_latest_version() {
@@ -68,7 +72,7 @@ _github_tags_latest_version() {
 }
 
 Hugo_latest_version() {
-  _github_releases_v2_latest_version "gohugoio/hugo"
+  _github_releases_v2_latest_version "gohugoio/hugo" | sed -E "$_version_swap_string"
 }
 
 Hugo_current_version() {
@@ -76,7 +80,7 @@ Hugo_current_version() {
 }
 
 Kitty_latest_version() {
-  _github_releases_v2_latest_version "kovidgoyal/kitty" | grep -E -o 'v([0-9.]+)' | grep -E -o '([0-9.]+)'
+  _github_releases_v2_latest_version "kovidgoyal/kitty" | __remove_leading_version_v
 }
 
 calibre_latest_version() {
@@ -93,11 +97,11 @@ Audacity_latest_version() {
 }
 
 HexFiend_latest_version() {
-  _github_releases_latest_version ridiculousfish/HexFiend
+  _github_releases_v2_latest_version ridiculousfish/HexFiend | __remove_leading_version_v
 }
 
 ScrollReverser_latest_version() {
-  _github_releases_latest_version pilotmoon/Scroll-Reverser
+  _github_releases_v2_latest_version pilotmoon/Scroll-Reverser | __remove_leading_version_v
 }
 
 Dolphin_latest_version() {
@@ -142,11 +146,11 @@ OpenEmu_latest_version() {
 }
 
 Keycastr_latest_version() {
-  _github_releases_latest_version keycastr/keycastr
+  _github_releases_v2_latest_version keycastr/keycastr | __remove_leading_version_v
 }
 
 Transmission_latest_version() {
-  _github_releases_latest_version transmission/transmission
+  _github_releases_v2_latest_version transmission/transmission
 }
 
 Wireshark_latest_version() {
@@ -237,7 +241,11 @@ declare -a whichapps
 while getopts 'n:' arg
 do
   case $arg in
-    n) whichapps+=("$OPTARG");
+    n) whichapps+=("$OPTARG");;
+    *)
+      echo "invalid option" >&2
+      exit 1
+      ;;
   esac
 done
 
