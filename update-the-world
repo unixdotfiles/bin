@@ -112,7 +112,7 @@ then
 fi
 
 _pip_update pip
-for v in 3.12 3.13
+for v in 3.13
 do
   _pip_update pip-${v}
   _pip_update pip${v}
