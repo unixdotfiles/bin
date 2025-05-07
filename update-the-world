@@ -89,6 +89,7 @@ then
     brew upgrade --greedy
     brew upgrade --cask
   fi
+  (cd ~/.conf/osx && brew bundle)
 fi
 __exists apt-get && __sudo apt-get update
 __exists apt-get && __sudo apt-get dist-upgrade
