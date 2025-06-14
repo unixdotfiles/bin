@@ -155,3 +155,6 @@ for lua in luarocks luarocks-5.3
 do
   __exists lua && "$lua" install --local $("$lua" list --porcelain --outdated |cut -d '	' -f 1)
 done
+
+# Update various go tools
+CGO_ENABLED=1 go install -tags extended github.com/gohugoio/hugo@latest
