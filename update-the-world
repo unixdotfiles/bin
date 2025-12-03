@@ -88,6 +88,7 @@ then
     brew update
     brew upgrade --greedy
     brew upgrade --cask
+    brew cleanup --scrub --prune=all
   fi
   (cd ~/.conf/osx && brew bundle)
 fi
