@@ -85,12 +85,16 @@ then
   update-kitty
   if __exists brew
   then
-    brew update
-    brew upgrade --greedy
-    brew upgrade --cask
-    brew cleanup --scrub --prune=all
+    brew update --verbose
+    brew upgrade --greedy --verbose
+    brew upgrade --cask --verbose
+    brew cleanup --scrub --prune=all --verbose
   fi
-  (cd ~/.conf/osx && brew bundle)
+  pushd ~/.conf/osx
+    brew bundle
+    brew bundle dump --zap --force
+    git commit -m "[osx] redump Brewfile" -- Brewfile
+  popd
 fi
 __exists apt-get && __sudo apt-get update
 __exists apt-get && __sudo apt-get dist-upgrade
