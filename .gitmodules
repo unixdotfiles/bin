@@ -4,10 +4,6 @@
 [submodule "submodules/ministat"]
 	path = submodules/ministat
 	url = https://github.com/codahale/ministat.git
-[submodule "submodules/check-soa"]
-	path = submodules/check-soa
-	url = https://github.com/bortzmeyer/check-soa.git
-	ignore = dirty
 [submodule "submodules/ssllabs-scan"]
 	path = submodules/ssllabs-scan
 	url = git@github.com:ssllabs/ssllabs-scan.git
