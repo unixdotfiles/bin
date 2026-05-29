@@ -1,0 +1,22 @@
+#!/usr/bin/env zsh
+trap 'exit 1' INT
+
+flags=""
+while getopts "$flags" flag
+do
+  case "$flag" in
+  ?)  printf "Usage: %s: [-%s] FILE PREFIX\n" "$0" "$flags"
+      exit 2;;
+  esac
+done
+
+if [[ $# -ne 2 ]]
+then
+  printf "Usage: %s: [-%s] FILE PREFIX\n" "$0" "$flags"
+  exit 2
+fi
+
+fname="$1"
+prefix="$2"
+
+mv "$fname" "$prefix-$fname"
