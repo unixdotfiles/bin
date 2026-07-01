@@ -19,4 +19,4 @@ fi
 fname="$1"
 prefix="$2"
 
-mv "$fname" "$prefix-$fname"
+mv "$fname" "$prefix-${fname:t}"
