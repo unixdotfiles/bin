@@ -86,8 +86,8 @@ then
   if __exists brew
   then
     brew update --verbose
-    brew upgrade --greedy --verbose
-    brew upgrade --cask --verbose
+    brew upgrade --greedy --verbose --no-ask
+    brew autoremove
     brew cleanup --scrub --prune=all --verbose
   fi
   pushd ~/.conf/osx
