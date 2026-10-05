@@ -1,0 +1,10 @@
+#!/usr/bin/env zsh
+BIN=~/bin/submodules/go/bin/maskedemail-cli
+if [[ ! -e "$BIN" ]]
+then
+  (
+    export GOPATH=~/bin/submodules/go/
+    go install github.com/dvcrn/maskedemail-cli@latest
+  )
+fi
+"$BIN" "$@"
